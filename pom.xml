@@ -11,6 +11,7 @@
     <modules>
         <module>dido-x-operators</module>
         <module>dido-x-flow</module>
+        <module>dido-x-data</module>
     </modules>
 
     <properties>
@@ -29,6 +30,13 @@
     <dependencyManagement>
 
         <dependencies>
+
+            <dependency>
+                <groupId>uk.co.rgordon</groupId>
+                <artifactId>dido-x-data</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
 
             <dependency>
                 <groupId>uk.co.rgordon</groupId>

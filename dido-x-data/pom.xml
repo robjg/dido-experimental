@@ -9,13 +9,12 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>dido-x-flow</artifactId>
+    <artifactId>dido-x-data</artifactId>
 
     <dependencies>
-
         <dependency>
             <groupId>uk.co.rgordon</groupId>
-            <artifactId>dido-x-data</artifactId>
+            <artifactId>dido-data</artifactId>
         </dependency>
 
         <dependency>
@@ -35,6 +34,7 @@
             <artifactId>hamcrest</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
+
+
 </project>
