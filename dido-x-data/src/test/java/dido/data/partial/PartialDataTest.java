@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.*;
 
 class PartialDataTest {
 
@@ -19,7 +18,7 @@ class PartialDataTest {
                 .addNamed("Price", double.class)
                 .build();
 
-        DidoData data = DidoData.valuesWithSchema(schema).of("Apple", 5, 23.2);
+        DidoData data = DidoData.withSchema(schema).of("Apple", 5, 23.2);
 
         PartialData partialData = PartialData.of(data, "Fruit", "Price");
 
@@ -28,7 +27,7 @@ class PartialDataTest {
                 .addNamedAt(3, "Price", double.class)
                 .build();
 
-        DidoData expected = DidoData.valuesWithSchema(expectedSchema).of("Apple", 23.2);
+        DidoData expected = DidoData.withSchema(expectedSchema).of("Apple", 23.2);
 
         assertThat(partialData, is(expected));
 

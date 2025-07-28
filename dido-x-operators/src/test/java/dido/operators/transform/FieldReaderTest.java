@@ -19,7 +19,7 @@ class FieldReaderTest {
             .addNamed("Price", double.class)
             .build();
 
-    DidoData data = ArrayData.valuesWithSchema(schema)
+    DidoData data = DidoData.withSchema(schema)
             .of("Apple", 10, 23.5);
 
 
@@ -176,7 +176,7 @@ class FieldReaderTest {
                 .addNamed("FinalPrice", double.class)
                 .build();
 
-        DidoData expectedData = ArrayData.valuesWithSchema(expectedSchema)
+        DidoData expectedData = DidoData.withSchema(expectedSchema)
                 .of(0.5, 11.75, 35.25);
 
         assertThat(result, is(expectedData));
