@@ -11,13 +11,13 @@ public class ArrayRowImpl implements LiveRow {
 
     private final DataSchema schema;
 
-    private final LiveValue[] liveValues;
+    private final LiveValue[] values;
 
     public ArrayRowImpl(DataSchema schema) {
         this.schema = schema;
-        liveValues = new LiveValue[schema.lastIndex()];
+        values = new LiveValue[schema.lastIndex()];
         for (int i = schema.firstIndex(); i > 0; i = schema.nextIndex(i)) {
-            liveValues[i -1] = new ObjectLiveValue();
+            values[i -1] = new ObjectLiveValue();
         }
     }
 
@@ -27,7 +27,7 @@ public class ArrayRowImpl implements LiveRow {
         for (SchemaField field : schema.getSchemaFields()) {
 
             if (loadSchema.hasNamed(field.getName())) {
-                liveValues[field.getIndex() - 1].set(data.getNamed(field.getName()));
+                values[field.getIndex() - 1].set(data.getNamed(field.getName()));
             }
         }
     }
@@ -40,7 +40,7 @@ public class ArrayRowImpl implements LiveRow {
     @Override
     public LiveValue getValueAt(int index) {
         try {
-            LiveValue liveValue = liveValues[index - 1];
+            LiveValue liveValue = values[index - 1];
             if (liveValue == null) {
                 throw new NoSuchFieldException(index, schema);
             }
@@ -57,6 +57,6 @@ public class ArrayRowImpl implements LiveRow {
         if (index == 0) {
             throw new NoSuchFieldException(name, schema);
         }
-        return liveValues[index -1];
+        return values[index -1];
     }
 }
