@@ -12,6 +12,7 @@
         <module>dido-x-operators</module>
         <module>dido-x-flow</module>
         <module>dido-x-data</module>
+        <module>dido-x-table</module>
     </modules>
 
     <properties>

@@ -67,7 +67,7 @@ class FieldReaderTest {
         }
     }
 
-    static class FieldGetterReader implements FieldReader {
+    static class FieldGetterReader extends AbstractFieldReader {
 
         final FieldGetter getter;
 
@@ -88,7 +88,7 @@ class FieldReaderTest {
         }
     }
 
-    static class FieldSetterWriter implements FieldWriter {
+    static class FieldSetterWriter extends AbstractFieldWriter {
 
         private final Function<? super WriteSchema, ? extends FieldSetter> setterFunc;
 
@@ -102,6 +102,11 @@ class FieldReaderTest {
 
         void init(WriteSchema schema) {
             this.setter = setterFunc.apply(schema);
+        }
+
+        @Override
+        public void set(Object value) {
+            throw new UnsupportedOperationException();
         }
 
         @Override
