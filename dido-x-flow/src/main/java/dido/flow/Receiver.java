@@ -3,7 +3,7 @@ package dido.flow;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 
-public interface Receiver extends AutoCloseable {
+public interface Receiver {
 
     void onData(DidoData data);
 
@@ -11,6 +11,4 @@ public interface Receiver extends AutoCloseable {
 
     void onDelete(PartialData partial);
 
-    @Override
-    void close();
 }

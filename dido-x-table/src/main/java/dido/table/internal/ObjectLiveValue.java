@@ -13,6 +13,8 @@ public class ObjectLiveValue implements LiveValue {
 
     private final List<Consumer<? super FieldReader>> listeners = new ArrayList<>();
 
+    boolean changed;
+
     private Object value;
 
     @Override
@@ -72,13 +74,22 @@ public class ObjectLiveValue implements LiveValue {
 
     @Override
     public void clear() {
+        if (value != null) {
+            changed = true;
+        }
         set(null);
     }
 
     @Override
     public void set(Object value) {
-        this.value = value;
-        fireChange();
+        if (Objects.equals(this.value, value)) {
+            changed = false;
+        }
+        else {
+            changed = true;
+            this.value = value;
+            fireChange();
+        }
     }
 
     @Override

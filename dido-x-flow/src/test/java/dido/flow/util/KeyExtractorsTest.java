@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-class IndexExtractorsTest {
+class KeyExtractorsTest {
 
     DataSchema schema = DataSchema.builder()
             .addNamed("Fruit", String.class)
@@ -17,9 +17,9 @@ class IndexExtractorsTest {
     @Test
     void fromFirstField() {
 
-        IndexExtractor test = IndexExtractors.fromFirstField(schema);
+        KeyExtractor test = KeyExtractors.fromFirstField(schema);
 
-        Comparable<?> key = test.indexOf(DidoData.withSchema(schema)
+        Comparable<?> key = test.keyOf(DidoData.withSchema(schema)
                 .of("Apple", 23.2));
 
         assertThat(key, is("Apple"));
