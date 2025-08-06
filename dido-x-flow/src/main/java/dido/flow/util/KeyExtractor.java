@@ -2,8 +2,8 @@ package dido.flow.util;
 
 import dido.data.DidoData;
 
-public interface KeyExtractor {
+public interface KeyExtractor<K extends Comparable<K>> {
 
-    Comparable<?> keyOf(DidoData data);
+    K keyOf(DidoData data);
 
 }

@@ -1,4 +1,4 @@
-package dido.table;
+package dido.flow;
 
 public interface QuietlyCloseable extends AutoCloseable {
 

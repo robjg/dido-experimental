@@ -9,27 +9,29 @@ import java.util.function.Function;
 
 public class KeyExtractors {
 
-    static class Impl implements KeyExtractor {
+    static class Impl<K extends Comparable<K>> implements KeyExtractor<K> {
 
-        private final Function<? super DidoData, ? extends Comparable<?>> func;
+        private final Function<? super DidoData, ? extends K> func;
 
-        private Impl(Function<? super DidoData, ? extends Comparable<?>> func) {
+        private Impl(Function<? super DidoData, ? extends K> func) {
             this.func = func;
         }
 
         @Override
-        public Comparable<?> keyOf(DidoData data) {
+        public K keyOf(DidoData data) {
             return func.apply(data);        }
     }
 
-    public static KeyExtractor fromFirstField(DataSchema schema) {
+    public static <K extends Comparable<K>> KeyExtractor<K> fromFirstField(DataSchema schema) {
+
         int index = schema.firstIndex();
         if (index < 1) {
             throw new IllegalArgumentException("No First Field");
         }
         ReadSchema readSchema = ReadSchema.from(schema);
         FieldGetter getter = readSchema.getFieldGetterAt(index);
-        return new Impl(data -> (Comparable<?>) getter.get(data));
+        //noinspection unchecked
+        return new Impl<>(data -> (K) getter.get(data));
     }
 
 

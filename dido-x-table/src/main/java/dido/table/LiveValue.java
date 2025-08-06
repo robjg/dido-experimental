@@ -1,5 +1,6 @@
 package dido.table;
 
+import dido.flow.QuietlyCloseable;
 import dido.operators.transform.FieldReader;
 
 import java.util.function.Consumer;

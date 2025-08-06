@@ -2,7 +2,7 @@ package dido.table.internal;
 
 import dido.operators.transform.FieldReader;
 import dido.table.LiveValue;
-import dido.table.QuietlyCloseable;
+import dido.flow.QuietlyCloseable;
 
 import java.util.ArrayList;
 import java.util.List;
