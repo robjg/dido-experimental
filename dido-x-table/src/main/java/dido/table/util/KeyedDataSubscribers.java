@@ -3,17 +3,17 @@ package dido.table.util;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 import dido.flow.QuietlyCloseable;
-import dido.table.KeyedDataSubscriber;
+import dido.table.DataTableSubscriber;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class KeyedDataSubscribers<K extends Comparable<K>> implements KeyedDataSubscriber<K> {
+public class KeyedDataSubscribers<K extends Comparable<K>> implements DataTableSubscriber<K> {
 
-    private KeyedDataSubscriber<? super K> existing;
+    private DataTableSubscriber<? super K> existing;
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public QuietlyCloseable addSubscriber(KeyedDataSubscriber<? super K> additional) {
+    public QuietlyCloseable addSubscriber(DataTableSubscriber<? super K> additional) {
 
         if (existing == null) {
             existing = additional;
@@ -52,7 +52,7 @@ public class KeyedDataSubscribers<K extends Comparable<K>> implements KeyedDataS
         }
     }
 
-    void remove(KeyedDataSubscriber<? super K> subscriber) {
+    void remove(DataTableSubscriber<? super K> subscriber) {
         if (existing == subscriber) {
             existing = null;
         } else if (existing instanceof SubscriberList<? super K> list) {
@@ -63,9 +63,9 @@ public class KeyedDataSubscribers<K extends Comparable<K>> implements KeyedDataS
         }
     }
 
-    static class SubscriberList<K extends Comparable<K>> implements KeyedDataSubscriber<K> {
+    static class SubscriberList<K extends Comparable<K>> implements DataTableSubscriber<K> {
 
-        private final List<KeyedDataSubscriber<? super K>> consumers = new ArrayList<>();
+        private final List<DataTableSubscriber<? super K>> consumers = new ArrayList<>();
 
         @Override
         public void onData(K key, DidoData data) {

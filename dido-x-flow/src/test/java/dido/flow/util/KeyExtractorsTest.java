@@ -17,7 +17,7 @@ class KeyExtractorsTest {
     @Test
     void fromFirstField() {
 
-        KeyExtractor test = KeyExtractors.fromFirstField(schema);
+        KeyExtractor<?> test = KeyExtractors.fromFirstField().keyExtractorFor(schema);
 
         Comparable<?> key = test.keyOf(DidoData.withSchema(schema)
                 .of("Apple", 23.2));

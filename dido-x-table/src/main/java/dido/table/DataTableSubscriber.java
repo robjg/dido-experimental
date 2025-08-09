@@ -3,7 +3,7 @@ package dido.table;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 
-public interface KeyedDataSubscriber<K extends Comparable<K>> {
+public interface DataTableSubscriber<K extends Comparable<K>> {
 
     void onData(K key, DidoData data);
 

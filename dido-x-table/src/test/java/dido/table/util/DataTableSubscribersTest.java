@@ -3,7 +3,7 @@ package dido.table.util;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 import dido.flow.QuietlyCloseable;
-import dido.table.KeyedDataSubscriber;
+import dido.table.DataTableSubscriber;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -12,9 +12,9 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-class KeyedDataSubscribersTest {
+class DataTableSubscribersTest {
 
-    static class OurSubscriber implements KeyedDataSubscriber<Integer> {
+    static class OurSubscriber implements DataTableSubscriber<Integer> {
 
         List<String> results = new ArrayList<>();
 

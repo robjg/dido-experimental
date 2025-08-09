@@ -2,7 +2,6 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.table.DataTable;
 import org.junit.jupiter.api.Test;
 
 class DataTableBasicTest {
@@ -15,7 +14,7 @@ class DataTableBasicTest {
                 .addNamed("Fruit", String.class)
                 .build();
 
-        DataTable<Integer> test = DataTableBasic.<Integer>withSchema(schema)
+        DataTableBasic<Integer> test = DataTableBasic.<Integer>withSchema(schema)
                 .create();
 
         DidoData.withSchema(schema).many()

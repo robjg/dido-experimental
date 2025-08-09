@@ -47,7 +47,7 @@ public class LiveTableBasic implements LiveTable {
 
         LiveTable create() {
             return new LiveTableBasic(schema, keyExtractor == null ?
-                    KeyExtractors.fromFirstField(schema) : keyExtractor);
+                    KeyExtractors.fromFirstField().keyExtractorFor(schema) : keyExtractor);
         }
     }
 

@@ -8,16 +8,17 @@ import dido.data.mutable.MutableArrayData;
 import dido.data.mutable.MutableData;
 import dido.data.partial.PartialData;
 import dido.flow.QuietlyCloseable;
+import dido.flow.Receiver;
 import dido.flow.util.KeyExtractor;
 import dido.flow.util.KeyExtractors;
 import dido.table.DataTable;
-import dido.table.KeyedDataSubscriber;
+import dido.table.DataTableSubscriber;
 import dido.table.util.KeyedDataSubscribers;
 
 import java.util.Map;
 import java.util.TreeMap;
 
-public class DataTableBasic<K extends Comparable<K>> implements DataTable<K> {
+public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Receiver {
 
     private final DataSchema schema;
 
@@ -47,9 +48,9 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K> {
             return this;
         }
 
-        public DataTable<K> create() {
+        public DataTableBasic<K> create() {
             return new DataTableBasic<>(schema,
-                    keyExtractor == null ? KeyExtractors.fromFirstField(schema) :
+                    keyExtractor == null ? KeyExtractors.<K>fromFirstField().keyExtractorFor(schema) :
                             keyExtractor);
         }
     }
@@ -65,12 +66,17 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K> {
     }
 
     @Override
+    public boolean containsKey(K key) {
+        return rows.containsKey(key);
+    }
+
+    @Override
     public DidoData get(K key) {
         return rows.get(key);
     }
 
     @Override
-    public QuietlyCloseable subscribe(KeyedDataSubscriber<K> listener) {
+    public QuietlyCloseable subscribe(DataTableSubscriber<K> listener) {
         return subscribers.addSubscriber(listener);
     }
 
@@ -115,5 +121,7 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K> {
         if (row == null) {
             throw new IllegalArgumentException("No row for key " + key);
         }
+
+        subscribers.onDelete(key);
     }
 }

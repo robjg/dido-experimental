@@ -1,11 +1,17 @@
 package dido.table;
 
 import dido.data.DataSchema;
-import dido.flow.Receiver;
+import dido.data.DidoData;
+import dido.flow.QuietlyCloseable;
 
-public interface DataTable<K extends Comparable<K>> extends Receiver, KeyedData<K> {
+public interface DataTable<K extends Comparable<K>> {
 
     DataSchema getSchema();
 
+    boolean containsKey(K key);
+
+    DidoData get(K key);
+
+    QuietlyCloseable subscribe(DataTableSubscriber<K> listener);
 
 }

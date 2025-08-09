@@ -1,6 +1,5 @@
 package dido.flow.util;
 
-import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.FieldGetter;
 import dido.data.ReadSchema;
@@ -22,17 +21,29 @@ public class KeyExtractors {
             return func.apply(data);        }
     }
 
-    public static <K extends Comparable<K>> KeyExtractor<K> fromFirstField(DataSchema schema) {
+    public static <K extends Comparable<K>> KeyExtractorProvider<K> fromFirstField() {
 
-        int index = schema.firstIndex();
-        if (index < 1) {
-            throw new IllegalArgumentException("No First Field");
-        }
-        ReadSchema readSchema = ReadSchema.from(schema);
-        FieldGetter getter = readSchema.getFieldGetterAt(index);
-        //noinspection unchecked
-        return new Impl<>(data -> (K) getter.get(data));
+        return schema -> {
+
+            int index = schema.firstIndex();
+            if (index < 1) {
+                throw new IllegalArgumentException("No First Field");
+            }
+            ReadSchema readSchema = ReadSchema.from(schema);
+            FieldGetter getter = readSchema.getFieldGetterAt(index);
+            //noinspection unchecked
+            return new Impl<>(data -> (K) getter.get(data));
+        };
     }
 
+    public static <K extends Comparable<K>> KeyExtractorProvider<K> fromNamed(String name) {
 
+        return schema -> {
+
+            ReadSchema readSchema = ReadSchema.from(schema);
+            FieldGetter getter = readSchema.getFieldGetterNamed(name);
+            //noinspection unchecked
+            return new Impl<>(data -> (K) getter.get(data));
+        };
+    }
 }
