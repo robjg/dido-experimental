@@ -12,6 +12,7 @@ import dido.table.DataTableSubscriber;
 import dido.table.util.KeyedDataSubscribers;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DataJoin<K extends Comparable<K>>
         implements DataTable<K>, QuietlyCloseable {
@@ -111,6 +112,8 @@ public class DataJoin<K extends Comparable<K>>
 
         public DataJoin<K1> innerJoin(DataTable<K2> right) {
             ForeignKeyedTable<K1, K2> reKeyedRight = new ForeignKeyedTable<>(right, keyExtractor);
+            left.entrySet().forEach(
+                    e -> reKeyedRight.onData(e.getKey(), e.getValue()));
             QuietlyCloseable leftSubscribeClose = left.subscribe(reKeyedRight);
             return new DataJoin<>(left, reKeyedRight, new InnerJoinToken(),
                     QuietlyCloseable.of(leftSubscribeClose, reKeyedRight));
@@ -141,6 +144,16 @@ public class DataJoin<K extends Comparable<K>>
     }
 
     @Override
+    public Set<K> keySet() {
+        return join.keySet();
+    }
+
+    @Override
+    public Set<Map.Entry<K, DidoData>> entrySet() {
+        return join.entrySet();
+    }
+
+    @Override
     public QuietlyCloseable subscribe(DataTableSubscriber<K> listener) {
         return subscribers.addSubscriber(listener);
     }
@@ -158,6 +171,10 @@ public class DataJoin<K extends Comparable<K>>
         boolean containsKey(K key);
 
         DidoData get(K key);
+
+        Set<K> keySet();
+
+        Set<Map.Entry<K, DidoData>> entrySet();
     }
 
 
@@ -232,6 +249,21 @@ public class DataJoin<K extends Comparable<K>>
             else {
                 return concatenator.concat(leftData, rightData);
             }
+        }
+
+        @Override
+        public Set<K> keySet() {
+            Set<K> keys = new HashSet<>(left.keySet());
+            keys.retainAll(right.keySet());
+            return keys;
+        }
+
+        @Override
+        public Set<Map.Entry<K, DidoData>> entrySet() {
+
+            return keySet().stream()
+                    .map(k -> Map.entry(k, get(k)))
+                    .collect(Collectors.toSet());
         }
 
         @Override
@@ -313,6 +345,22 @@ public class DataJoin<K extends Comparable<K>>
                 return null;
             }
             return otherTable.get(otherKey);
+        }
+
+        @Override
+        public Set<K1> keySet() {
+            return mappingTo.entrySet().stream()
+                    .filter(e -> otherTable.containsKey(e.getValue()))
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toSet());
+        }
+
+        @Override
+        public Set<Map.Entry<K1, DidoData>> entrySet() {
+            return mappingTo.entrySet().stream()
+                    .filter(e -> otherTable.containsKey(e.getValue()))
+                    .map(e -> Map.entry(e.getKey(), otherTable.get(e.getValue())))
+                    .collect(Collectors.toSet());
         }
 
         @Override

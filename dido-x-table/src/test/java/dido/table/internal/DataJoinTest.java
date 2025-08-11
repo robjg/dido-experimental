@@ -98,6 +98,9 @@ class DataJoinTest {
     @Test
     void innerJoinForeignKey() {
 
+        fruit.forEach(fruitTable::onData);
+        grocers.forEach(grocerTable::onData);
+
         DataJoin<String> joined = DataJoin.from(fruitTable).foreignKey(
                 KeyExtractors.<String>fromNamed("GrocerId"))
                 .innerJoin(grocerTable);
@@ -107,9 +110,6 @@ class DataJoinTest {
                 .concat(grocerSchema).build();
 
         assertThat(joined.getSchema(), is(expectedSchema));
-
-        fruit.forEach(fruitTable::onData);
-        grocers.forEach(grocerTable::onData);
 
         DidoData f1 = joined.get("F1");
 

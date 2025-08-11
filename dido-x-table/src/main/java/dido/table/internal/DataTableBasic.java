@@ -16,6 +16,7 @@ import dido.table.DataTableSubscriber;
 import dido.table.util.KeyedDataSubscribers;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Receiver {
@@ -24,7 +25,7 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Re
 
     private final KeyExtractor<K> keyExtractor;
 
-    private final Map<Comparable<?>, MutableData> rows = new TreeMap<>();
+    private final Map<K, MutableData> rows = new TreeMap<>();
 
     private final KeyedDataSubscribers<K> subscribers = new KeyedDataSubscribers<>();
 
@@ -73,6 +74,17 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Re
     @Override
     public DidoData get(K key) {
         return rows.get(key);
+    }
+
+    @Override
+    public Set<K> keySet() {
+        return rows.keySet();
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Override
+    public Set<Map.Entry<K, DidoData>> entrySet() {
+        return (Set) rows.entrySet();
     }
 
     @Override
