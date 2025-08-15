@@ -4,15 +4,13 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.SchemaBuilder;
 import dido.flow.util.KeyExtractors;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 class DataJoinTest {
 
@@ -58,14 +56,6 @@ class DataJoinTest {
 
     DataTableBasic<String> grocerTable = DataTableBasic.<String>withSchema(grocerSchema)
             .create();
-
-    @BeforeEach
-            void setUp() {
-        fruit.forEach(fruitTable::onData);
-        colours.forEach(colourTable::onData);
-        grocers.forEach(grocerTable::onData);
-    }
-
 
     @Test
     void simpleInnerJoin() {
@@ -121,4 +111,29 @@ class DataJoinTest {
 
         joined.close();
     }
+
+    @Test
+    void simpleLeftJoin() {
+
+        fruitTable.onData(fruit.get(1));
+
+        DataSchema expectedSchema = SchemaBuilder
+                .builderFrom(fruitSchema)
+                .concat(colourSchema).build();
+
+        DataJoin<String> joined = DataJoin.from(fruitTable).primaryKeys()
+                .leftJoin(colourTable);
+
+        assertThat(joined.getSchema(), is(expectedSchema));
+
+        assertThat(joined.keySet(), contains("F2"));
+
+        DidoData f2 = joined.get("F2");
+
+        assertThat(f2.getSchema(), is(expectedSchema));
+        assertThat(f2, is(DidoData.of("F2", "Banana", "G2", 3, null, null)));
+
+        joined.close();
+    }
+
 }

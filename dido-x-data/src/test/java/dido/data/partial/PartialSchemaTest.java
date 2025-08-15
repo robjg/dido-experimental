@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-class PartialSchemaImplTest {
+class PartialSchemaTest {
 
     @Test
     void partialOfFields() {
@@ -16,7 +16,7 @@ class PartialSchemaImplTest {
                 .addNamed("Qty", int.class)
                 .addNamed("Price", double.class)
                 .build();
-        PartialSchema partialSchema = PartialSchemaImpl.of(schema, "Fruit", "Price");
+        PartialSchema partialSchema = PartialSchema.of(schema, "Fruit", "Price");
 
         DataSchema expected = DataSchema.builder()
                 .addNamedAt(1, "Fruit", String.class)
@@ -34,7 +34,7 @@ class PartialSchemaImplTest {
                 .addNamed("Qty", int.class)
                 .addNamed("Price", double.class)
                 .build();
-        PartialSchema partialSchema = PartialSchemaImpl.of(schema, "Price", "Fruit");
+        PartialSchema partialSchema = PartialSchema.of(schema, "Price", "Fruit");
 
         DataSchema expected = DataSchema.builder()
                 .addNamedAt(1, "Fruit", String.class)
@@ -52,7 +52,7 @@ class PartialSchemaImplTest {
                 .addNamed("Qty", int.class)
                 .addNamed("Price", double.class)
                 .build();
-        PartialSchema partialSchema = PartialSchemaImpl.of(schema,
+        PartialSchema partialSchema = PartialSchema.of(schema,
                 "Price", "Fruit");
 
         DataSchema expected = DataSchema.builder()
@@ -72,7 +72,7 @@ class PartialSchemaImplTest {
                 .addNamed("Price", double.class)
                 .build();
 
-        PartialSchema partialSchema = PartialSchemaImpl.of(schema, "Fruit", "Price", "Qty");
+        PartialSchema partialSchema = PartialSchema.of(schema, "Fruit", "Price", "Qty");
 
         assertThat(partialSchema, is(schema));
     }

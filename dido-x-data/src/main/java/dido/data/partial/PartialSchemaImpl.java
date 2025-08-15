@@ -1,15 +1,18 @@
 package dido.data.partial;
 
-import dido.data.*;
-import dido.data.NoSuchFieldException;
+import dido.data.DataSchema;
+import dido.data.FieldGetter;
+import dido.data.ReadSchema;
+import dido.data.SchemaField;
 import dido.data.useful.AbstractDataSchema;
 
 import java.util.Arrays;
-import java.util.Set;
 
 public class PartialSchemaImpl extends AbstractDataSchema implements PartialSchema {
 
     private final ReadSchema fullSchema;
+
+    private final int[] indices;
 
     private final int firstIndex;
 
@@ -18,60 +21,31 @@ public class PartialSchemaImpl extends AbstractDataSchema implements PartialSche
     private final int[] next;
 
     protected PartialSchemaImpl(DataSchema fullSchema,
-                                int firstIndex,
-                                int lastIndex,
-                                int[] next) {
+                                int... indices) {
         this.fullSchema = ReadSchema.from(fullSchema);
-        this.firstIndex = firstIndex;
-        this.lastIndex = lastIndex;
-        this.next = next;
-    }
+        this.indices = Arrays.copyOf(indices, indices.length);
 
-    public static PartialSchema of(DataSchema schema, Set<String> fields) {
-        return of(schema, fields.toArray(new String[0]));
-    }
-
-    public static PartialSchema of(DataSchema schema, String... fields) {
-
-        int[] indexes = new int[fields.length];
-        for (int i = 0; i < indexes.length; i++) {
-            String fieldName = fields[i];
-            int index = schema.getIndexNamed(fieldName);
-            if (index == 0) {
-                throw new NoSuchFieldException(fieldName, schema);
-            }
-            indexes[i] = index;
-        }
-        return of(schema, indexes);
-    }
-
-    public static PartialSchema of(DataSchema schema, int... indexes) {
-
-        int firstIndex;
-        int lastIndex;
-        int[] next;
-
-        if (indexes.length == 0) {
+        if (indices.length == 0) {
             firstIndex = 0;
             lastIndex = 0;
             next = new int[0];
         }
         else {
-            Arrays.sort(indexes);
+            Arrays.sort(indices);
 
-            firstIndex = indexes[0];
-            lastIndex = indexes[indexes.length - 1];
+            firstIndex = indices[0];
+            lastIndex = indices[indices.length - 1];
             next = new int[lastIndex];
             int last = firstIndex;
-            for (int i = 1; i < indexes.length; i++) {
-                int current = indexes[i];
+            for (int i = 1; i < indices.length; i++) {
+                int current = indices[i];
                 next[last - 1] = current;
                 last = current;
             }
             next[last - 1] = 0;
         }
-        return new PartialSchemaImpl(schema, firstIndex, lastIndex, next);
     }
+
 
     @Override
     public FieldGetter getFieldGetterAt(int index) {
@@ -96,6 +70,16 @@ public class PartialSchemaImpl extends AbstractDataSchema implements PartialSche
     @Override
     public int lastIndex() {
         return lastIndex;
+    }
+
+    @Override
+    public int getSize() {
+        return indices.length;
+    }
+
+    @Override
+    public int[] getIndices() {
+        return Arrays.copyOf(indices, indices.length);
     }
 
     @Override

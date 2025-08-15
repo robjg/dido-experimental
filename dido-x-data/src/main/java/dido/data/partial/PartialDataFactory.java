@@ -1,51 +1,23 @@
 package dido.data.partial;
 
-import dido.data.DataFactory;
-import dido.data.WritableData;
+import dido.data.*;
 
-public class PartialDataFactory implements DataFactory {
+/**
+ * Provides the ability to create Dido Data.
+ *
+ */
+public interface PartialDataFactory extends DataFactory {
 
-    private final DataFactory delegate;
+    PartialSchema getSchema();
 
-    private final PartialSchema schema;
+    /**
+     * Provides Writable data that can be written to either directly using the {@code set} methods
+     * or using a {@link FieldSetter} provided by a {@link WriteStrategy} appropriate for the data type.
+     *
+     * @return Writable Data. Never null.
+     */
+    WritableData getWritableData();
 
-    protected PartialDataFactory(DataFactory dataFactory,
-                              PartialSchema schema) {
-        this.schema = schema;
-        this.delegate = dataFactory;
-    }
-
-    public static PartialDataFactory of(DataFactory dataFactory,
-                                 String... fields) {
-        return of(dataFactory,
-                PartialSchemaImpl.of(dataFactory.getSchema(), fields));
-    }
-
-    public static PartialDataFactory of(DataFactory dataFactory,
-                                 int... indexes) {
-        return of(dataFactory,
-                PartialSchemaImpl.of(dataFactory.getSchema(), indexes));
-    }
-
-    public static PartialDataFactory of(DataFactory dataFactory,
-                                 PartialSchema schema) {
-        return new PartialDataFactory(dataFactory, schema);
-    }
-
-    @Override
-    public PartialSchema getSchema() {
-        return schema;
-    }
-
-    @Override
-    public WritableData getWritableData() {
-        return delegate.getWritableData();
-    }
-
-    @Override
-    public PartialData toData() {
-
-        return new PartialDataDelegate(schema, delegate.toData());
-    }
+    PartialData toData();
 
 }

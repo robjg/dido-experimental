@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-class PartialDataFactoryTest {
+class PartialDataDelegateFactoryTest {
 
     @Test
     void simpleCreate() {
@@ -19,7 +19,7 @@ class PartialDataFactoryTest {
                 .addNamed("Price", double.class)
                 .build();
 
-        PartialDataFactory test = PartialDataFactory.of(
+        PartialDataDelegateFactory test = PartialDataDelegateFactory.of(
                 dfp.factoryFor(schema), "Fruit", "Price");
 
         WritableData writableData = test.getWritableData();

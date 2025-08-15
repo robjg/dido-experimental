@@ -3,7 +3,6 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.SchemaField;
 import dido.data.mutable.MutableArrayData;
 import dido.data.mutable.MutableData;
 import dido.data.partial.PartialData;
@@ -114,10 +113,12 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Re
         }
 
         DataSchema incomingSchema = partial.getSchema();
-        for (SchemaField schemaField : row.getSchema().getSchemaFields()) {
-            String name = schemaField.getName();
-            if (incomingSchema.hasNamed(name) && partial.hasNamed(name)) {
-                row.setNamed(name, partial.getNamed(name));
+        for (int index : incomingSchema.getIndices()) {
+            if (partial.hasAt(index)) {
+                row.setAt(index, partial.getAt(index));
+            }
+            else {
+                row.clearAt(index);
             }
         }
 
