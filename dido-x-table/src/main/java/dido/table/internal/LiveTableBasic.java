@@ -68,8 +68,8 @@ public class LiveTableBasic implements LiveTable {
         }
 
         @Override
-        public void onDelete(PartialData partial) {
-            receivers.forEach(r -> r.onDelete(partial));
+        public void onDelete(DidoData keyData) {
+            receivers.forEach(r -> r.onDelete(keyData));
         }
     }
 
@@ -91,7 +91,7 @@ public class LiveTableBasic implements LiveTable {
     }
 
     @Override
-    public void onDelete(PartialData partial) {
+    public void onDelete(DidoData keyData) {
 
     }
 

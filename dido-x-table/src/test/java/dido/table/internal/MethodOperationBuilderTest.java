@@ -34,7 +34,7 @@ class MethodOperationBuilderTest {
         }
 
         @Override
-        public void onDelete(PartialData partial) {
+        public void onDelete(DidoData keyData) {
             throw new RuntimeException("Unexpected");
         }
     }

@@ -9,6 +9,6 @@ public interface Receiver {
 
     void onPartial(PartialData partial);
 
-    void onDelete(PartialData partial);
+    void onDelete(DidoData keyData);
 
 }

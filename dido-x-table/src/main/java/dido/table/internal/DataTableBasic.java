@@ -126,9 +126,9 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Re
     }
 
     @Override
-    public void onDelete(PartialData partial) {
+    public void onDelete(DidoData keyData) {
 
-        K key = keyExtractor.keyOf(partial);
+        K key = keyExtractor.keyOf(keyData);
 
         MutableData row = rows.remove(key);
         if (row == null) {

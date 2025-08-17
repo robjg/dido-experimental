@@ -3,7 +3,7 @@ package dido.table.internal;
 import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.flow.util.KeyExtractors;
-import dido.table.DataTable;
+import dido.table.CloseableTable;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -49,7 +49,7 @@ class ForeignKeyedTableTest {
         fruit.forEach(fruitTable::onData);
         grocers.forEach(grocerTable::onData);
 
-        DataTable<String> grocersByFruitId = ForeignKeyedTable
+        CloseableTable<String> grocersByFruitId = ForeignKeyedTable
                 .byForeignKey(fruitTable, grocerTable,
                         KeyExtractors.<String>fromNamed("GrocerId").keyExtractorFor(fruitSchema));
 
@@ -60,5 +60,7 @@ class ForeignKeyedTableTest {
         assertThat(grocersByFruitId.get("F1"), is(DidoData.of( "G2", "Smith")));
         assertThat(grocersByFruitId.get("F2"), is(DidoData.of( "G2", "Smith")));
         assertThat(grocersByFruitId.get("F3"), is(DidoData.of( "G1", "Jones")));
+
+        grocersByFruitId.close();
     }
 }
