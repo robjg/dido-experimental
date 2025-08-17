@@ -8,6 +8,7 @@ import dido.flow.QuietlyCloseable;
 import dido.flow.util.KeyExtractor;
 import dido.flow.util.KeyExtractorProvider;
 import dido.operators.Concatenator;
+import dido.table.CloseableTable;
 import dido.table.DataTable;
 import dido.table.DataTableSubscriber;
 import dido.table.util.KeyedDataSubscribers;
@@ -129,13 +130,14 @@ public class DataJoin<K extends Comparable<K>>
         }
 
         public DataJoin<K1> innerJoin(DataTable<K2> right) {
-            ForeignKeyedTable<K1, K2> reKeyedRight = new ForeignKeyedTable<>(left, right, keyExtractor);
+            CloseableTable<K1> reKeyedRight = ForeignKeyedTable.byForeignKey(
+                    left, right, keyExtractor);
             return new DataJoin<>(left, reKeyedRight,
                     new InnerJoinToken(), reKeyedRight);
         }
 
         public DataJoin<K1> leftJoin(DataTable<K2> right) {
-            ForeignKeyedTable<K1, K2> reKeyedRight = new ForeignKeyedTable<>(left, right, keyExtractor);
+            CloseableTable<K1> reKeyedRight = ForeignKeyedTable.byForeignKey(left, right, keyExtractor);
             return new DataJoin<>(left, reKeyedRight,
                     new LeftJoinToken(), reKeyedRight);
         }
@@ -374,137 +376,6 @@ public class DataJoin<K extends Comparable<K>>
         public void close() {
             leftClose.close();
             rightClose.close();
-        }
-    }
-
-    static class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
-            implements DataTable<K1>, DataTableSubscriber<K1>, QuietlyCloseable {
-
-        private final Map<K1, K2> mappingTo = new HashMap<>();
-
-        private final Map<K2, Set<K1>> mappingFrom = new HashMap<>();
-
-        private final DataTable<K2> otherTable;
-
-        private final KeyExtractor<K2> keyExtractor;
-
-        private final KeyedDataSubscribers<K1> subscribers = new KeyedDataSubscribers<>();
-
-        private final QuietlyCloseable closeables;
-
-        ForeignKeyedTable(DataTable<K1> keyTable, DataTable<K2> otherTable, KeyExtractor<K2> keyExtractor) {
-            this.otherTable = otherTable;
-            this.keyExtractor = keyExtractor;
-
-            keyTable.entrySet().forEach(
-                    e -> onData(e.getKey(), e.getValue()));
-
-            QuietlyCloseable keySubscribeClose = keyTable.subscribe(this);
-
-            QuietlyCloseable otherSubscribeClose = otherTable.subscribe(new DataTableSubscriber<K2>() {
-                @Override
-                public void onData(K2 key, DidoData data) {
-                    Set<K1> lefts = mappingFrom.get(key);
-                    if (lefts != null) {
-                        for (K1 left : lefts) {
-                            subscribers.onData(left, data);
-                        }
-                    }
-                }
-
-                @Override
-                public void onPartial(K2 key, PartialData data) {
-                    Set<K1> lefts = mappingFrom.get(key);
-                    if (lefts != null) {
-                        for (K1 left : lefts) {
-                            subscribers.onPartial(left, data);
-                        }
-                    }
-                }
-
-                @Override
-                public void onDelete(K2 key) {
-                    Set<K1> lefts = mappingFrom.get(key);
-                    if (lefts != null) {
-                        for (K1 left : lefts) {
-                            subscribers.onDelete(left);
-                        }
-                    }
-                }
-            });
-
-            this.closeables = QuietlyCloseable.of(keySubscribeClose, otherSubscribeClose);
-        }
-
-        @Override
-        public DataSchema getSchema() {
-            return otherTable.getSchema();
-        }
-
-        @Override
-        public boolean containsKey(K1 key) {
-            K2 otherKey = mappingTo.get(key);
-            if (otherKey == null) {
-                return false;
-            }
-            return otherTable.containsKey(otherKey);
-        }
-
-        @Override
-        public DidoData get(K1 key) {
-            K2 otherKey = mappingTo.get(key);
-            if (otherKey == null) {
-                return null;
-            }
-            return otherTable.get(otherKey);
-        }
-
-        @Override
-        public Set<K1> keySet() {
-            return mappingTo.entrySet().stream()
-                    .filter(e -> otherTable.containsKey(e.getValue()))
-                    .map(Map.Entry::getKey)
-                    .collect(Collectors.toSet());
-        }
-
-        @Override
-        public Set<Map.Entry<K1, DidoData>> entrySet() {
-            return mappingTo.entrySet().stream()
-                    .filter(e -> otherTable.containsKey(e.getValue()))
-                    .map(e -> Map.entry(e.getKey(), otherTable.get(e.getValue())))
-                    .collect(Collectors.toSet());
-        }
-
-        @Override
-        public QuietlyCloseable subscribe(DataTableSubscriber<K1> listener) {
-            return subscribers.addSubscriber(listener);
-        }
-
-        @Override
-        public void onData(K1 key, DidoData data) {
-            K2 other = keyExtractor.keyOf(data);
-            mappingTo.put(key, other);
-            mappingFrom.computeIfAbsent(other, k -> new TreeSet<>()).add(key);
-        }
-
-        @Override
-        public void onPartial(K1 key, PartialData data) {
-            // Nothing to do.
-        }
-
-        @Override
-        public void onDelete(K1 key) {
-            K2 other = mappingTo.remove(key);
-            Set<K1> set = mappingFrom.get(other);
-            set.remove(key);
-            if (set.isEmpty()) {
-                mappingFrom.remove(other);
-            }
-        }
-
-        @Override
-        public void close() {
-            closeables.close();
         }
     }
 
