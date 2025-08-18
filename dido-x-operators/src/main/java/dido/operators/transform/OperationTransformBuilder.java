@@ -56,25 +56,36 @@ public class OperationTransformBuilder {
 
     public DidoTransform create() {
 
-        DataFactoryProvider factoryProvider = DataFactoryProvider.newInstance();
-
-        SchemaFactory schemaFactory = factoryProvider.getSchemaFactory();
+        SchemaFactory schemaFactory = dataFactoryProvider.getSchemaFactory();
 
         Getters getters = new Getters();
         Setters setters = new Setters();
 
         OperationContext context = new OperationContext() {
             @Override
-            public ValueGetter getterNamed(String name) {
-                FieldGetter getter = readSchema.getFieldGetterNamed(name);
-                return getters.newGetter(getter);
+            public <T> ValueGetter<T> valueGetterNamed(String name) {
+                return getters.newGetter(readSchema.getFieldGetterNamed(name),
+                        readSchema.getTypeNamed(name));
             }
 
             @Override
-            public ValueSetter writeNamed(String name, Type type) {
+            public DoubleGetter doubleGetterNamed(String name) {
+                return getters.newDoubleGetter(readSchema.getFieldGetterNamed(name));
+            }
+
+            @Override
+            public <T> ValueSetter<T> valueSetterNamed(String name, Type type) {
                 schemaFactory.addSchemaField(SchemaField.of(0, name, type));
 
                 return setters.newSetter(
+                        writeSchema -> writeSchema.getFieldSetterNamed(name));
+            }
+
+            @Override
+            public DoubleSetter doubleSetterNamed(String name) {
+                schemaFactory.addSchemaField(SchemaField.of(0, name, double.class));
+
+                return setters.newDoubleSetter(
                         writeSchema -> writeSchema.getFieldSetterNamed(name));
             }
         };
@@ -86,7 +97,7 @@ public class OperationTransformBuilder {
         WriteSchema outSchema = WriteSchema.from(schemaFactory.toSchema());
         setters.init(outSchema);
 
-        DataFactory factory = factoryProvider.factoryFor(outSchema);
+        DataFactory factory = dataFactoryProvider.factoryFor(outSchema);
 
         return new DidoTransform() {
 
@@ -110,17 +121,45 @@ public class OperationTransformBuilder {
 
         DidoData current;
 
-        class FieldValueGetter extends AbstractValueGetter {
+        class FieldValueGetter<T> implements ValueGetter<T> {
 
             final FieldGetter getter;
 
-            FieldValueGetter(FieldGetter getter) {
+            final Type type;
+
+            FieldValueGetter(FieldGetter getter, Type type) {
+                this.getter = getter;
+                this.type = type;
+            }
+
+            @Override
+            public Type getType() {
+                return type;
+            }
+
+            @Override
+            public boolean has() {
+                return getter.has(current);
+            }
+
+            @Override
+            public T get() {
+                //noinspection unchecked
+                return (T) getter.get(current);
+            }
+        }
+
+        class FieldDoubleGetter implements DoubleGetter {
+
+            final FieldGetter getter;
+
+            FieldDoubleGetter(FieldGetter getter) {
                 this.getter = getter;
             }
 
             @Override
-            public Object get() {
-                return getter.get(current);
+            public boolean has() {
+                return getter.has(current);
             }
 
             @Override
@@ -129,24 +168,28 @@ public class OperationTransformBuilder {
             }
         }
 
-        public ValueGetter newGetter(FieldGetter getter) {
-            return new FieldValueGetter(getter);
+        public <T> ValueGetter<T> newGetter(FieldGetter getter, Type type) {
+            return new FieldValueGetter<>(getter, type);
+        }
+
+        public DoubleGetter newDoubleGetter(FieldGetter getter) {
+            return new FieldDoubleGetter(getter);
         }
     }
 
     static class Setters {
 
-        List<FieldValueSetter> setters = new ArrayList<>();
+        List<BaseSetter<?>> setters = new ArrayList<>();
 
         private WritableData writableData;
 
-        class FieldValueSetter extends AbstractValueSetter {
+        abstract class BaseSetter<T> implements ValueSetter<T> {
 
             private final Function<? super WriteSchema, ? extends FieldSetter> setterFunc;
 
-            private FieldSetter setter;
+            protected FieldSetter setter;
 
-            FieldValueSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
+            BaseSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
                 this.setterFunc = setterFunc;
             }
 
@@ -155,8 +198,27 @@ public class OperationTransformBuilder {
             }
 
             @Override
-            public void set(Object value) {
+            public void clear() {
+                setter.clear(writableData);
+            }
+        }
+
+        class FieldValueSetter<T> extends BaseSetter<T> {
+
+            FieldValueSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
+                super(setterFunc);
+            }
+
+            @Override
+            public void set(T value) {
                 setter.set(writableData, value);
+            }
+        }
+
+        class FieldDoubleSetter extends BaseSetter<Double> implements DoubleSetter {
+
+            FieldDoubleSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
+                super(setterFunc);
             }
 
             @Override
@@ -165,8 +227,14 @@ public class OperationTransformBuilder {
             }
         }
 
-        ValueSetter newSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
-            FieldValueSetter writer = new FieldValueSetter(setterFunc);
+        <T> ValueSetter<T> newSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
+            FieldValueSetter<T> writer = new FieldValueSetter<>(setterFunc);
+            setters.add(writer);
+            return writer;
+        }
+
+        DoubleSetter newDoubleSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
+            FieldDoubleSetter writer = new FieldDoubleSetter(setterFunc);
             setters.add(writer);
             return writer;
         }

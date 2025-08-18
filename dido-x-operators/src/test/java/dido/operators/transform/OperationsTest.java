@@ -34,8 +34,8 @@ public class OperationsTest {
 
         @Override
         public Runnable prepare(OperationContext context) {
-            ValueGetter getter = context.getterNamed(from);
-            ValueSetter setter = context.writeNamed(to, Object.class);
+            ValueGetter<Object> getter = context.valueGetterNamed(from);
+            ValueSetter<Object> setter = context.valueSetterNamed(to, getter.getType());
             return () -> setter.set(getter.get());
         }
     }
@@ -50,7 +50,7 @@ public class OperationsTest {
         DidoData result = transform.apply(data);
 
         DataSchema expectedSchema = SchemaBuilder.newInstance()
-                .addNamed("OldPrice", Object.class)
+                .addNamed("OldPrice", double.class)
                 .build();
 
         assertThat(result.getSchema(), is(expectedSchema));

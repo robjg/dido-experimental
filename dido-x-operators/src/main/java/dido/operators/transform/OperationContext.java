@@ -4,7 +4,11 @@ import java.lang.reflect.Type;
 
 public interface OperationContext {
 
-    ValueGetter getterNamed(String name);
+    <T> ValueGetter<T> valueGetterNamed(String name);
 
-    ValueSetter writeNamed(String name, Type type);
+    DoubleGetter doubleGetterNamed(String name);
+
+    <T> ValueSetter<T> valueSetterNamed(String name, Type type);
+
+    DoubleSetter doubleSetterNamed(String name);
 }

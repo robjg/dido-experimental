@@ -1,26 +1,13 @@
 package dido.operators.transform;
 
-public interface ValueGetter {
+import java.lang.reflect.Type;
+
+public interface ValueGetter<T> {
+
+    Type getType();
 
     boolean has();
 
-    Object get();
+    T get();
 
-    boolean getBoolean();
-
-    char getChar();
-
-    byte getByte();
-
-    short getShort();
-
-    int getInt();
-
-    long getLong();
-
-    float getFloat();
-
-    double getDouble();
-
-    String getString();
 }

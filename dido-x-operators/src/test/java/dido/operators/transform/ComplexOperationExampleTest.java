@@ -23,11 +23,11 @@ class ComplexOperationExampleTest {
         @Override
         public Runnable prepare(OperationContext context) {
 
-            ValueGetter priceGetter = context.getterNamed("Price");
+            DoubleGetter priceGetter = context.doubleGetterNamed("Price");
 
-            ValueSetter markupSetter = context.writeNamed("Markup", double.class);
-            ValueSetter amountSetter = context.writeNamed("MarkupAmount", double.class);
-            ValueSetter finalSetter = context.writeNamed("FinalPrice", double.class);
+            DoubleSetter markupSetter = context.doubleSetterNamed("Markup");
+            DoubleSetter amountSetter = context.doubleSetterNamed("MarkupAmount");
+            DoubleSetter finalSetter = context.doubleSetterNamed("FinalPrice");
 
             return () -> {
                 double price = priceGetter.getDouble();
