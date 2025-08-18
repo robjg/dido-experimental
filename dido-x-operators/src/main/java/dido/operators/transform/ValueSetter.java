@@ -1,6 +1,6 @@
 package dido.operators.transform;
 
-public interface FieldWriter {
+public interface ValueSetter {
 
     void clear();
 

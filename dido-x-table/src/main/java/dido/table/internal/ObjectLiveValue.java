@@ -1,6 +1,6 @@
 package dido.table.internal;
 
-import dido.operators.transform.FieldReader;
+import dido.operators.transform.ValueGetter;
 import dido.table.LiveValue;
 import dido.flow.QuietlyCloseable;
 
@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 
 public class ObjectLiveValue implements LiveValue {
 
-    private final List<Consumer<? super FieldReader>> listeners = new ArrayList<>();
+    private final List<Consumer<? super ValueGetter>> listeners = new ArrayList<>();
 
     boolean changed;
 
@@ -138,7 +138,7 @@ public class ObjectLiveValue implements LiveValue {
     }
 
     @Override
-    public QuietlyCloseable onChange(Consumer<? super FieldReader> listener) {
+    public QuietlyCloseable onChange(Consumer<? super ValueGetter> listener) {
         listener.accept(this);
         listeners.add(listener);
         return () -> listeners.remove(listener);

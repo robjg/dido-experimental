@@ -2,7 +2,7 @@ package dido.operators.transform;
 
 import java.util.Objects;
 
-public abstract class AbstractFieldReader implements FieldReader {
+public abstract class AbstractValueGetter implements ValueGetter {
 
     @Override
     public boolean has() {

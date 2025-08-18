@@ -1,6 +1,6 @@
 package dido.operators.transform;
 
-public interface FieldReader {
+public interface ValueGetter {
 
     boolean has();
 

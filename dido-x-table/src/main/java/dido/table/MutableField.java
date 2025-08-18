@@ -1,7 +1,7 @@
 package dido.table;
 
-import dido.operators.transform.FieldReader;
-import dido.operators.transform.FieldWriter;
+import dido.operators.transform.ValueGetter;
+import dido.operators.transform.ValueSetter;
 
-public interface MutableField extends FieldReader, FieldWriter {
+public interface MutableField extends ValueGetter, ValueSetter {
 }

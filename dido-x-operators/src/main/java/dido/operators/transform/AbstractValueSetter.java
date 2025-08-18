@@ -1,6 +1,6 @@
 package dido.operators.transform;
 
-public abstract class AbstractFieldWriter implements FieldWriter {
+public abstract class AbstractValueSetter implements ValueSetter {
 
     @Override
     public void clear() {
