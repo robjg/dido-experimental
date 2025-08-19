@@ -62,30 +62,18 @@ public class OperationTransformBuilder {
         Setters setters = new Setters();
 
         OperationContext context = new OperationContext() {
+
             @Override
-            public <T> ValueGetter<T> valueGetterNamed(String name) {
+            public ValueGetter getterNamed(String name) {
                 return getters.newGetter(readSchema.getFieldGetterNamed(name),
                         readSchema.getTypeNamed(name));
             }
 
             @Override
-            public DoubleGetter doubleGetterNamed(String name) {
-                return getters.newDoubleGetter(readSchema.getFieldGetterNamed(name));
-            }
-
-            @Override
-            public <T> ValueSetter<T> valueSetterNamed(String name, Type type) {
+            public ValueSetter setterNamed(String name, Type type) {
                 schemaFactory.addSchemaField(SchemaField.of(0, name, type));
 
                 return setters.newSetter(
-                        writeSchema -> writeSchema.getFieldSetterNamed(name));
-            }
-
-            @Override
-            public DoubleSetter doubleSetterNamed(String name) {
-                schemaFactory.addSchemaField(SchemaField.of(0, name, double.class));
-
-                return setters.newDoubleSetter(
                         writeSchema -> writeSchema.getFieldSetterNamed(name));
             }
         };
@@ -121,7 +109,7 @@ public class OperationTransformBuilder {
 
         DidoData current;
 
-        class FieldValueGetter<T> implements ValueGetter<T> {
+        class FieldValueGetter implements ValueGetter {
 
             final FieldGetter getter;
 
@@ -143,53 +131,76 @@ public class OperationTransformBuilder {
             }
 
             @Override
-            public T get() {
-                //noinspection unchecked
-                return (T) getter.get(current);
-            }
-        }
-
-        class FieldDoubleGetter implements DoubleGetter {
-
-            final FieldGetter getter;
-
-            FieldDoubleGetter(FieldGetter getter) {
-                this.getter = getter;
+            public Object get() {
+                return getter.get(current);
             }
 
             @Override
-            public boolean has() {
-                return getter.has(current);
+            public boolean getBoolean() {
+                return getter.getBoolean(current);
+            }
+
+            @Override
+            public char getChar() {
+                return getter.getChar(current);
+            }
+
+            @Override
+            public byte getByte() {
+                return getter.getByte(current);
+            }
+
+            @Override
+            public short getShort() {
+                return getter.getShort(current);
+            }
+
+            @Override
+            public int getInt() {
+                return getter.getInt(current);
+            }
+
+            @Override
+            public long getLong() {
+                return getter.getLong(current);
+            }
+
+            @Override
+            public float getFloat() {
+                return getter.getFloat(current);
             }
 
             @Override
             public double getDouble() {
                 return getter.getDouble(current);
             }
+
+            @Override
+            public String getString() {
+                return getter.getString(current);
+            }
+
         }
 
-        public <T> ValueGetter<T> newGetter(FieldGetter getter, Type type) {
-            return new FieldValueGetter<>(getter, type);
-        }
 
-        public DoubleGetter newDoubleGetter(FieldGetter getter) {
-            return new FieldDoubleGetter(getter);
+        public ValueGetter newGetter(FieldGetter getter, Type type) {
+            return new FieldValueGetter(getter, type);
         }
     }
 
     static class Setters {
 
-        List<BaseSetter<?>> setters = new ArrayList<>();
+        List<FieldValueSetter> setters = new ArrayList<>();
 
         private WritableData writableData;
 
-        abstract class BaseSetter<T> implements ValueSetter<T> {
+        class FieldValueSetter  implements ValueSetter {
 
             private final Function<? super WriteSchema, ? extends FieldSetter> setterFunc;
 
             protected FieldSetter setter;
 
-            BaseSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
+            FieldValueSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
                 this.setterFunc = setterFunc;
             }
 
@@ -201,40 +212,61 @@ public class OperationTransformBuilder {
             public void clear() {
                 setter.clear(writableData);
             }
-        }
 
-        class FieldValueSetter<T> extends BaseSetter<T> {
-
-            FieldValueSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
-                super(setterFunc);
+            @Override
+            public void set(Object value) {
+                setter.set(writableData, value);
             }
 
             @Override
-            public void set(T value) {
-                setter.set(writableData, value);
+            public void setBoolean(boolean value) {
+                setter.setBoolean(writableData, value);
             }
-        }
 
-        class FieldDoubleSetter extends BaseSetter<Double> implements DoubleSetter {
+            @Override
+            public void setByte(byte value) {
+                setter.setByte(writableData, value);
+            }
 
-            FieldDoubleSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
-                super(setterFunc);
+            @Override
+            public void setChar(char value) {
+                setter.setChar(writableData, value);
+            }
+
+            @Override
+            public void setShort(short value) {
+                setter.setShort(writableData, value);
+            }
+
+            @Override
+            public void setInt(int value) {
+                setter.setInt(writableData, value);
+            }
+
+            @Override
+            public void setLong(long value) {
+                setter.setLong(writableData, value);
+            }
+
+            @Override
+            public void setFloat(float value) {
+                setter.setFloat(writableData, value);
             }
 
             @Override
             public void setDouble(double d) {
                 setter.setDouble(writableData, d);
             }
+
+            @Override
+            public void setString(String value) {
+                setter.setString(writableData, value);
+            }
         }
 
-        <T> ValueSetter<T> newSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
-            FieldValueSetter<T> writer = new FieldValueSetter<>(setterFunc);
-            setters.add(writer);
-            return writer;
-        }
 
-        DoubleSetter newDoubleSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
-            FieldDoubleSetter writer = new FieldDoubleSetter(setterFunc);
+        ValueSetter newSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
+            FieldValueSetter writer = new FieldValueSetter(setterFunc);
             setters.add(writer);
             return writer;
         }

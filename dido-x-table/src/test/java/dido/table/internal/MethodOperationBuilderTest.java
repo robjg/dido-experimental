@@ -59,7 +59,7 @@ class MethodOperationBuilderTest {
         ArrayRowImpl row = new ArrayRowImpl(schemaFactory.toSchema(), receiver);
         row.onData(DidoData.withSchema(schema).of(2), List.of(consumer));
 
-        assertThat(row.getValueNamed("Qty").getInt(), Matchers.is(4));
+        assertThat(row.getValueNamed("Qty").get(), Matchers.is(4));
     }
 
     public static class MultiplyBy2 {
@@ -94,7 +94,7 @@ class MethodOperationBuilderTest {
         ArrayRowImpl row = new ArrayRowImpl(schemaFactory.toSchema(), receiver);
         row.load(DidoData.withSchema(schema).of(2, 2), List.of(consumer));
 
-        assertThat(row.getValueNamed("c").getInt(), Matchers.is(4));
+        assertThat(row.getValueNamed("c").get(), Matchers.is(4));
     }
 
     public static class AddTwoColumns {

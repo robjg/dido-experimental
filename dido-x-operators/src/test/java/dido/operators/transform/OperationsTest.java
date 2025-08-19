@@ -34,8 +34,8 @@ public class OperationsTest {
 
         @Override
         public Runnable prepare(OperationContext context) {
-            ValueGetter<Object> getter = context.valueGetterNamed(from);
-            ValueSetter<Object> setter = context.valueSetterNamed(to, getter.getType());
+            ValueGetter getter = context.getterNamed(from);
+            ValueSetter setter = context.setterNamed(to, getter.getType());
             return () -> setter.set(getter.get());
         }
     }

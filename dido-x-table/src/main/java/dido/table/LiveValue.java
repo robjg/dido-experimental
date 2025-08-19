@@ -2,12 +2,11 @@ package dido.table;
 
 import dido.flow.QuietlyCloseable;
 import dido.operators.transform.ValueGetter;
+import dido.operators.transform.ValueSetter;
 
 import java.util.function.Consumer;
 
-public interface LiveValue extends MutableField {
+public interface LiveValue extends ValueGetter, ValueSetter {
 
-
-    QuietlyCloseable onChange(Consumer<? super ValueGetter> listener);
-
+    QuietlyCloseable addChangeListener(Consumer<? super ValueGetter> listener);
 }

@@ -1,9 +1,10 @@
 package dido.table.internal;
 
+import dido.flow.QuietlyCloseable;
 import dido.operators.transform.ValueGetter;
 import dido.table.LiveValue;
-import dido.flow.QuietlyCloseable;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -23,53 +24,13 @@ public class ObjectLiveValue implements LiveValue {
     }
 
     @Override
+    public Type getType() {
+        return Object.class;
+    }
+
+    @Override
     public Object get() {
         return value;
-    }
-
-    @Override
-    public boolean getBoolean() {
-        return (boolean) get();
-    }
-
-    @Override
-    public char getChar() {
-        return (char) get();
-    }
-
-    @Override
-    public byte getByte() {
-        return ((Number) get()).byteValue();
-    }
-
-    @Override
-    public short getShort() {
-        return ((Number) get()).shortValue();
-    }
-
-    @Override
-    public int getInt() {
-        return ((Number) get()).intValue();
-    }
-
-    @Override
-    public long getLong() {
-        return ((Number) get()).longValue();
-    }
-
-    @Override
-    public float getFloat() {
-        return ((Number) get()).floatValue();
-    }
-
-    @Override
-    public double getDouble() {
-        return ((Number) get()).doubleValue();
-    }
-
-    @Override
-    public String getString() {
-        return Objects.toString(get());
     }
 
     @Override
@@ -92,54 +53,9 @@ public class ObjectLiveValue implements LiveValue {
         }
     }
 
-    @Override
-    public void setBoolean(boolean value) {
-        set(value);
-    }
 
     @Override
-    public void setByte(byte value) {
-        set(value);
-    }
-
-    @Override
-    public void setChar(char value) {
-        set(value);
-    }
-
-    @Override
-    public void setShort(short value) {
-        set(value);
-    }
-
-    @Override
-    public void setInt(int value) {
-        set(value);
-    }
-
-    @Override
-    public void setLong(long value) {
-        set(value);
-    }
-
-    @Override
-    public void setFloat(float value) {
-        set(value);
-    }
-
-    @Override
-    public void setDouble(double value) {
-        set(value);
-    }
-
-    @Override
-    public void setString(String value) {
-        set(value);
-    }
-
-    @Override
-    public QuietlyCloseable onChange(Consumer<? super ValueGetter> listener) {
-        listener.accept(this);
+    public QuietlyCloseable addChangeListener(Consumer<? super ValueGetter> listener) {
         listeners.add(listener);
         return () -> listeners.remove(listener);
     }
