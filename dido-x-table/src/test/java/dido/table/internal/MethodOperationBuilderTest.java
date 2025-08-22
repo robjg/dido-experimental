@@ -2,10 +2,8 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.SchemaFactory;
 import dido.data.partial.PartialData;
 import dido.flow.DidoSubscriber;
-import dido.table.LiveRow;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -46,18 +44,17 @@ class MethodOperationBuilderTest {
                 .addNamed("Qty", int.class)
                 .build();
 
-        SchemaFactory schemaFactory = SchemaFactory.newInstanceFrom(schema);
-
-        MethodOperationBuilder test = new MethodOperationBuilder(schema, schemaFactory);
-
-        Consumer<LiveRow> consumer = test.readingNamed("Qty")
-                .writingNamed("Qty")
-                .processor(new MultiplyBy2());
+        LiveOperation op = LiveOperationBuilder.forSchema(schema)
+                .addOp(new MethodOperationBuilder()
+                        .readingNamed("Qty")
+                        .writingNamed("Qty")
+                        .processor(new MultiplyBy2()))
+                .build();
 
         OurDidoSubscriber receiver = new OurDidoSubscriber();
 
-        ArrayRowImpl row = new ArrayRowImpl(schemaFactory.toSchema(), receiver);
-        row.onData(DidoData.withSchema(schema).of(2), List.of(consumer));
+        ArrayRowImpl row = new ArrayRowImpl(op.getResultantSchema(), receiver);
+        row.onData(DidoData.withSchema(schema).of(2), List.of(op));
 
         assertThat(row.getValueNamed("Qty").get(), Matchers.is(4));
     }
@@ -79,20 +76,18 @@ class MethodOperationBuilderTest {
                 .addNamed("b", int.class)
                 .build();
 
-        SchemaFactory schemaFactory = SchemaFactory.newInstanceFrom(schema);
-
-        MethodOperationBuilder test = new MethodOperationBuilder(schema, schemaFactory);
-
-        Consumer<LiveRow> consumer = test
-                .readingNamed("a")
-                .readingNamed("b")
-                .writingNamed("c", int.class)
-                .processor(new AddTwoColumns());
+        LiveOperation op = LiveOperationBuilder.forSchema(schema)
+                .addOp(new MethodOperationBuilder()
+                        .readingNamed("a")
+                        .readingNamed("b")
+                        .writingNamed("c", int.class)
+                        .processor(new AddTwoColumns()))
+                .build();
 
         OurDidoSubscriber receiver = new OurDidoSubscriber();
 
-        ArrayRowImpl row = new ArrayRowImpl(schemaFactory.toSchema(), receiver);
-        row.load(DidoData.withSchema(schema).of(2, 2), List.of(consumer));
+        ArrayRowImpl row = new ArrayRowImpl(op.getResultantSchema(), receiver);
+        row.load(DidoData.withSchema(schema).of(2, 2), List.of(op));
 
         assertThat(row.getValueNamed("c").get(), Matchers.is(4));
     }
@@ -100,8 +95,8 @@ class MethodOperationBuilderTest {
     public static class AddTwoColumns {
 
         void add(int a,
-                      int b,
-                      Consumer<Integer> c) {
+                 int b,
+                 Consumer<Integer> c) {
 
             c.accept(a + b);
         }

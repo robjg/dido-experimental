@@ -1,117 +1,107 @@
 package dido.table.internal;
 
-import dido.data.DataSchema;
-import dido.data.NoSuchFieldException;
-import dido.data.SchemaFactory;
-import dido.data.SchemaField;
-import dido.table.LiveRow;
-import dido.table.OperationBuilder;
+import dido.operators.transform.OperationContext;
+import dido.operators.transform.OperationDefinition;
+import dido.operators.transform.ValueGetter;
+import dido.operators.transform.ValueSetter;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.IllformedLocaleException;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Create an operation that invokes a method.
  */
-public class MethodOperationBuilder implements OperationBuilder {
-
-    private final DataSchema schema;
-
-    private final SchemaFactory schemaFactory;
+public class MethodOperationBuilder {
 
     private final List<ParamMaker> paramMakers = new ArrayList<>();
 
     interface ParamMaker {
 
-        Object toParam(LiveRow row);
+        Supplier<Object> toParam(OperationContext context);
 
     }
 
-    record ReadParamMaker(int index) implements ParamMaker {
+    record ReadParamMaker(String name) implements ParamMaker {
 
         @Override
-            public Object toParam(LiveRow row) {
-                return row.getValueAt(index).get();
-            }
+        public Supplier<Object> toParam(OperationContext context) {
+            ValueGetter getter = context.getterNamed(name);
+            return getter::get;
         }
+    }
 
-    record WriteParamMaker(int index) implements ParamMaker {
+    record WriteParamMaker(String name) implements ParamMaker {
 
         @Override
-            public Object toParam(LiveRow row) {
-                return (Consumer<Object>) value -> row.getValueAt(index).set(value);
-            }
+        public Supplier<Object> toParam(OperationContext context) {
+            Type type = context.typeOfNamed(name);
+            ValueSetter setter = context.setterNamed(name, type);
+            return () -> (Consumer<Object>) setter::set;
         }
-
-    public MethodOperationBuilder(DataSchema schema, SchemaFactory schemaFactory) {
-        this.schema = schema;
-        this.schemaFactory = schemaFactory;
     }
 
+    record WriteNewParamMaker(String name, Type type) implements ParamMaker {
 
-    @Override
-    public OperationBuilder readingNamed(String name) {
-        int index = schema.getIndexNamed(name);
-        if (index == 0) {
-            throw new NoSuchFieldException(name, schema);
+        @Override
+        public Supplier<Object> toParam(OperationContext context) {
+            ValueSetter setter = context.setterNamed(name, type);
+            return () -> (Consumer<Object>) setter::set;
         }
-        paramMakers.add(new ReadParamMaker(index));
+    }
+
+    public MethodOperationBuilder readingNamed(String name) {
+        paramMakers.add(new ReadParamMaker(name));
         return this;
     }
 
-    @Override
-    public OperationBuilder writingNamed(String name) {
-        int index = schema.getIndexNamed(name);
-        if (index == 0) {
-            throw new NoSuchFieldException(name, schema);
-        }
-        paramMakers.add(new WriteParamMaker(schema.getIndexNamed(name)));
+    public MethodOperationBuilder writingNamed(String name) {
+        paramMakers.add(new WriteParamMaker(name));
         return this;
     }
 
-    @Override
-    public OperationBuilder writingNamed(String name, Type type) {
-        int index = schema.getIndexNamed(name);
-        if (index == 0) {
-            index = schemaFactory.addSchemaField(SchemaField.of(0, name, type))
-                    .getIndex();
-        }
-        else {
-            throw new IllformedLocaleException("Field " + name + " exists already");
-        }
-        paramMakers.add(new WriteParamMaker(index));
+    public MethodOperationBuilder writingNamed(String name, Type type) {
+        paramMakers.add(new WriteNewParamMaker(name, type));
         return this;
     }
 
-    @Override
-    public Consumer<LiveRow> processor(Object processor) {
+    public OperationDefinition processor(Object processor) {
 
         Method m = processor.getClass().getDeclaredMethods()[0];
 
-        return new MethodInvoker(m, processor);
+        return context -> {
+
+            List<Supplier<Object>> suppliers  = paramMakers.stream()
+                    .map(pf -> pf.toParam(context))
+                    .toList();
+
+            return new MethodInvoker(m, processor, suppliers);
+        };
     }
 
-    class MethodInvoker implements Consumer<LiveRow> {
+    static class MethodInvoker implements Runnable {
 
         private final Method method;
 
         private final Object object;
 
+        private final List<Supplier<Object>> suppliers;
+
         MethodInvoker(Method method,
-                      Object object) {
+                      Object object, List<Supplier<Object>> suppliers) {
             this.method = method;
             this.object = object;
+            this.suppliers = suppliers;
         }
 
         @Override
-        public void accept(LiveRow row) {
-            Object[] params = paramMakers.stream()
-                    .map(pf -> pf.toParam(row))
+        public void run() {
+            Object[] params = suppliers.stream()
+                    .map(Supplier::get)
                     .toArray();
             try {
                 method.invoke(object, params);
