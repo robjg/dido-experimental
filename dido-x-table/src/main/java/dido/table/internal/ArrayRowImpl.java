@@ -6,7 +6,7 @@ import dido.data.NoSuchFieldException;
 import dido.data.SchemaField;
 import dido.data.partial.PartialData;
 import dido.data.useful.AbstractData;
-import dido.flow.Receiver;
+import dido.flow.DidoSubscriber;
 import dido.table.LiveRow;
 import dido.table.LiveValue;
 
@@ -18,14 +18,14 @@ public class ArrayRowImpl implements LiveRow {
 
     private final DataSchema schema;
 
-    private final Receiver receiver;
+    private final DidoSubscriber didoSubscriber;
 
     private final ObjectLiveValue[] values;
 
     public ArrayRowImpl(DataSchema schema,
-                        Receiver receiver) {
+                        DidoSubscriber didoSubscriber) {
         this.schema = schema;
-        this.receiver = receiver;
+        this.didoSubscriber = didoSubscriber;
         values = new ObjectLiveValue[schema.lastIndex()];
         for (int i = schema.firstIndex(); i > 0; i = schema.nextIndex(i)) {
             values[i -1] = new ObjectLiveValue();
@@ -42,8 +42,8 @@ public class ArrayRowImpl implements LiveRow {
                 value.changed = false;
             }
         }
-        if (changed && receiver != null) {
-            receiver.onData(new RowData());
+        if (changed && didoSubscriber != null) {
+            didoSubscriber.onData(new RowData());
         }
     }
 
@@ -58,9 +58,9 @@ public class ArrayRowImpl implements LiveRow {
             }
         }
 
-        if (!changed.isEmpty() && receiver != null) {
+        if (!changed.isEmpty() && didoSubscriber != null) {
             int[] ai = changed.stream().mapToInt(Integer::intValue).toArray();
-            receiver.onPartial(PartialData.of(new RowData(), ai));
+            didoSubscriber.onPartial(PartialData.of(new RowData(), ai));
         }
     }
 

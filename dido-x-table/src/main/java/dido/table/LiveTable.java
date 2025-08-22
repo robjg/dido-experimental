@@ -1,9 +1,9 @@
 package dido.table;
 
 import dido.data.DidoData;
-import dido.flow.Receiver;
+import dido.flow.DidoSubscriber;
 
-public interface LiveTable extends Receiver, AutoCloseable {
+public interface LiveTable extends DidoSubscriber, AutoCloseable {
 
     LiveRow getRow(DidoData data);
 

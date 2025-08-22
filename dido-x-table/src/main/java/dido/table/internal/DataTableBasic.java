@@ -7,7 +7,7 @@ import dido.data.mutable.MutableArrayData;
 import dido.data.mutable.MutableData;
 import dido.data.partial.PartialData;
 import dido.flow.QuietlyCloseable;
-import dido.flow.Receiver;
+import dido.flow.DidoSubscriber;
 import dido.flow.util.KeyExtractor;
 import dido.flow.util.KeyExtractors;
 import dido.table.DataTable;
@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Receiver {
+public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, DidoSubscriber {
 
     private final DataSchema schema;
 
@@ -87,7 +87,7 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Re
     }
 
     @Override
-    public QuietlyCloseable subscribe(DataTableSubscriber<K> listener) {
+    public QuietlyCloseable tableSubscribe(DataTableSubscriber<K> listener) {
         return subscribers.addSubscriber(listener);
     }
 

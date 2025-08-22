@@ -4,7 +4,7 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.SchemaFactory;
 import dido.data.partial.PartialData;
-import dido.flow.Receiver;
+import dido.flow.DidoSubscriber;
 import dido.table.LiveRow;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 class MethodOperationBuilderTest {
 
-    static class OurReceiver implements Receiver {
+    static class OurDidoSubscriber implements DidoSubscriber {
 
         List<DidoData> data = new ArrayList<>();
 
@@ -54,7 +54,7 @@ class MethodOperationBuilderTest {
                 .writingNamed("Qty")
                 .processor(new MultiplyBy2());
 
-        OurReceiver receiver = new OurReceiver();
+        OurDidoSubscriber receiver = new OurDidoSubscriber();
 
         ArrayRowImpl row = new ArrayRowImpl(schemaFactory.toSchema(), receiver);
         row.onData(DidoData.withSchema(schema).of(2), List.of(consumer));
@@ -89,7 +89,7 @@ class MethodOperationBuilderTest {
                 .writingNamed("c", int.class)
                 .processor(new AddTwoColumns());
 
-        OurReceiver receiver = new OurReceiver();
+        OurDidoSubscriber receiver = new OurDidoSubscriber();
 
         ArrayRowImpl row = new ArrayRowImpl(schemaFactory.toSchema(), receiver);
         row.load(DidoData.withSchema(schema).of(2, 2), List.of(consumer));

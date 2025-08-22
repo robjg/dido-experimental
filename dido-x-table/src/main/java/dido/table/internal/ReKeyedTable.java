@@ -85,7 +85,7 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
         existingTable.entrySet().forEach(
                 e -> existingSubscriber.onData(e.getKey(), e.getValue()));
 
-        table.closeables.add(existingTable.subscribe(existingSubscriber));
+        table.closeables.add(existingTable.tableSubscribe(existingSubscriber));
 
         return table;
     }
@@ -130,7 +130,7 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
     }
 
     @Override
-    public QuietlyCloseable subscribe(DataTableSubscriber<K1> listener) {
+    public QuietlyCloseable tableSubscribe(DataTableSubscriber<K1> listener) {
         return subscribers.addSubscriber(listener);
     }
 

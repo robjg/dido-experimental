@@ -94,9 +94,9 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
         childTable.entrySet().forEach(
                 e -> childSubscriber.onData(e.getKey(), e.getValue()));
 
-        table.closeables.add(childTable.subscribe(childSubscriber));
+        table.closeables.add(childTable.tableSubscribe(childSubscriber));
 
-        table.closeables.add(referenceTable.subscribe(table.new ReferenceTableSubscriber()));
+        table.closeables.add(referenceTable.tableSubscribe(table.new ReferenceTableSubscriber()));
 
         return table;
     }
@@ -141,7 +141,7 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
     }
 
     @Override
-    public QuietlyCloseable subscribe(DataTableSubscriber<K1> listener) {
+    public QuietlyCloseable tableSubscribe(DataTableSubscriber<K1> listener) {
         return subscribers.addSubscriber(listener);
     }
 

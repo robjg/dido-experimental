@@ -91,7 +91,7 @@ class DataTableBasicTest {
                 .forEach(test::onData);
 
         Recorder recorder = new Recorder();
-        QuietlyCloseable close = test.subscribe(recorder);
+        QuietlyCloseable close = test.tableSubscribe(recorder);
 
         test.onData(DidoData.withSchema(schema).of(2, "Pear", 14));
 

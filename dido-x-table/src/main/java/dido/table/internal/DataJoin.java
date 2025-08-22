@@ -173,7 +173,7 @@ public class DataJoin<K extends Comparable<K>>
     }
 
     @Override
-    public QuietlyCloseable subscribe(DataTableSubscriber<K> listener) {
+    public QuietlyCloseable tableSubscribe(DataTableSubscriber<K> listener) {
         return subscribers.addSubscriber(listener);
     }
 
@@ -205,7 +205,7 @@ public class DataJoin<K extends Comparable<K>>
 
         InnerJoin() {
 
-            leftClose = left.subscribe(new DataTableSubscriber<K>() {
+            leftClose = left.tableSubscribe(new DataTableSubscriber<K>() {
                 @Override
                 public void onData(K key, DidoData data) {
                     DidoData combined = get(key);
@@ -228,7 +228,7 @@ public class DataJoin<K extends Comparable<K>>
                     }
                 }
             });
-            rightClose = right.subscribe(new DataTableSubscriber<K>() {
+            rightClose = right.tableSubscribe(new DataTableSubscriber<K>() {
                 @Override
                 public void onData(K key, DidoData data) {
                     DidoData combined = get(key);
@@ -299,7 +299,7 @@ public class DataJoin<K extends Comparable<K>>
 
         LeftJoin() {
 
-            leftClose = left.subscribe(new DataTableSubscriber<K>() {
+            leftClose = left.tableSubscribe(new DataTableSubscriber<K>() {
                 @Override
                 public void onData(K key, DidoData data) {
                     subscribers.onData(key, get(key));
@@ -315,7 +315,7 @@ public class DataJoin<K extends Comparable<K>>
                     subscribers.onDelete(key);
                 }
             });
-            rightClose = right.subscribe(new DataTableSubscriber<K>() {
+            rightClose = right.tableSubscribe(new DataTableSubscriber<K>() {
                 @Override
                 public void onData(K key, DidoData data) {
                     DidoData combined = get(key);

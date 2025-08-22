@@ -3,7 +3,7 @@ package dido.table.internal;
 import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
-import dido.flow.Receiver;
+import dido.flow.DidoSubscriber;
 import dido.flow.util.KeyExtractor;
 import dido.flow.util.KeyExtractors;
 import dido.table.LiveRow;
@@ -21,7 +21,7 @@ public class LiveTableBasic implements LiveTable {
     private final Map<Comparable<?>, ArrayRowImpl> rows = new TreeMap<>();
 
     private final List<Consumer<LiveRow>> operations = new ArrayList<>();
-    private final List<Receiver> receivers = new ArrayList<>();
+    private final List<DidoSubscriber> didoSubscribers = new ArrayList<>();
 
     private LiveTableBasic(DataSchema schema,
                            KeyExtractor keyExtractor) {
@@ -55,21 +55,21 @@ public class LiveTableBasic implements LiveTable {
         return new Settings();
     }
 
-    class InternalReceiver implements Receiver {
+    class InternalDidoSubscriber implements DidoSubscriber {
 
         @Override
         public void onData(DidoData data) {
-            receivers.forEach(r -> r.onData(data));
+            didoSubscribers.forEach(r -> r.onData(data));
         }
 
         @Override
         public void onPartial(PartialData partial) {
-            receivers.forEach(r -> r.onPartial(partial));
+            didoSubscribers.forEach(r -> r.onPartial(partial));
         }
 
         @Override
         public void onDelete(DidoData keyData) {
-            receivers.forEach(r -> r.onDelete(keyData));
+            didoSubscribers.forEach(r -> r.onDelete(keyData));
         }
     }
 
@@ -77,7 +77,7 @@ public class LiveTableBasic implements LiveTable {
     public void onData(DidoData data) {
 
         ArrayRowImpl arrayRow = rows.computeIfAbsent(keyExtractor.keyOf(data),
-                key -> new ArrayRowImpl(schema, new InternalReceiver()));
+                key -> new ArrayRowImpl(schema, new InternalDidoSubscriber()));
         arrayRow.onData(data, operations);
     }
 
