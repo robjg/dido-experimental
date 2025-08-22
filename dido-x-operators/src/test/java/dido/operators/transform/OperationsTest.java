@@ -45,7 +45,7 @@ public class OperationsTest {
 
         DidoTransform transform = OperationTransformBuilder.forSchema(schema)
                 .addOp(new CopyDef("Price", "OldPrice"))
-                .create();
+                .build();
 
         DidoData result = transform.apply(data);
 

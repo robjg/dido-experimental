@@ -3,9 +3,7 @@ package dido.operators.transform;
 import dido.data.*;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 
 public class OperationTransformBuilder {
@@ -16,27 +14,46 @@ public class OperationTransformBuilder {
 
     private final List<OperationDefinition> opDefs = new ArrayList<>();
 
-    private OperationTransformBuilder(ReadSchema readSchema, DataFactoryProvider dataFactoryProvider) {
+    private final boolean existingFields;
+
+    private final boolean reIndex;
+
+    private OperationTransformBuilder(ReadSchema readSchema,
+                                      Settings settings) {
         this.readSchema = readSchema;
-        this.dataFactoryProvider = dataFactoryProvider;
+        this.dataFactoryProvider = Objects.requireNonNullElse(
+                settings.dataFactoryProvider, DataFactoryProvider.newInstance());
+        this.existingFields = settings.existingFields;
+        this.reIndex = settings.reIndex;
     }
 
     public static class Settings {
 
         private DataFactoryProvider dataFactoryProvider;
 
+        private boolean existingFields;
+
+        private boolean reIndex;
+
         public Settings dataFactoryProvider(DataFactoryProvider dataFactoryProvider) {
             this.dataFactoryProvider = dataFactoryProvider;
             return this;
         }
 
+        public Settings existingFields(boolean existingFields) {
+            this.existingFields = existingFields;
+            return this;
+        }
+
+        public Settings reIndex(boolean reIndex) {
+            this.reIndex = reIndex;
+            return this;
+        }
+
         public OperationTransformBuilder forSchema(DataSchema incomingSchema) {
 
-            DataFactoryProvider dataFactoryProvider = Objects.requireNonNullElse(
-                    this.dataFactoryProvider, DataFactoryProvider.newInstance());
-
             return new OperationTransformBuilder(ReadSchema.from(incomingSchema),
-                    dataFactoryProvider);
+                    this);
         }
     }
 
@@ -54,35 +71,86 @@ public class OperationTransformBuilder {
     }
 
 
-    public DidoTransform create() {
+    public DidoTransform build() {
 
         SchemaFactory schemaFactory = dataFactoryProvider.getSchemaFactory();
 
         Getters getters = new Getters();
         Setters setters = new Setters();
 
+        Map<String, Runnable> copyProcs = new LinkedHashMap<>(); ;
+
         OperationContext context = new OperationContext() {
 
             @Override
+            public Type typeOfNamed(String name) {
+                return readSchema.getTypeNamed(name);
+            }
+
+            @Override
             public ValueGetter getterNamed(String name) {
+                Objects.requireNonNull(name);
                 return getters.newGetter(readSchema.getFieldGetterNamed(name),
                         readSchema.getTypeNamed(name));
             }
 
             @Override
             public ValueSetter setterNamed(String name, Type type) {
-                schemaFactory.addSchemaField(SchemaField.of(0, name, type));
-
+                Objects.requireNonNull(name, "No name");
+                Objects.requireNonNull(type, "No type");
+                SchemaField existing = schemaFactory.getSchemaFieldNamed(name);
+                if (existing != null) {
+                    if (type != existing.getType()) {
+                        schemaFactory.addSchemaField(SchemaField.of(
+                                existing.getIndex(), existing.getName(), type));
+                    }
+                }
+                else {
+                    schemaFactory.addSchemaField(SchemaField.of(0, name, type));
+                }
+                copyProcs.remove(name);
                 return setters.newSetter(
-                        writeSchema -> writeSchema.getFieldSetterNamed(name));
+                        name,
+                        writeSchema -> writeSchema.getFieldSetterNamed(name),
+                        type);
+            }
+
+            @Override
+            public void removeNamed(String name) {
+                copyProcs.remove(name);
+                schemaFactory.removeNamed(name);
+                setters.removeSetter(name);
             }
         };
 
-        List<Runnable> process = opDefs.stream()
+        if (existingFields) {
+            for (SchemaField schemaField: readSchema.getSchemaFields()) {
+                schemaFactory.addSchemaField(schemaField);
+                Runnable copy = BasicOperations.copyNamed(schemaField.getName())
+                        .prepare(context);
+                copyProcs.put(schemaField.getName(), copy);
+            }
+        }
+
+        List<Runnable> opProcesses = opDefs.stream()
                 .map(opDef -> opDef.prepare(context))
                 .toList();
 
-        WriteSchema outSchema = WriteSchema.from(schemaFactory.toSchema());
+        List<Runnable> processes = new ArrayList<>(copyProcs.values());
+        processes.addAll(opProcesses);
+
+        DataSchema newSchema;
+        if (reIndex) {
+            SchemaFactory factory2 = dataFactoryProvider.getSchemaFactory();
+            for (SchemaField schemaField : schemaFactory.getSchemaFields()) {
+                factory2.addSchemaField(schemaField.mapToIndex(0));
+            }
+            newSchema = factory2.toSchema();
+        }
+        else {
+            newSchema = schemaFactory.toSchema();
+        }
+        WriteSchema outSchema = WriteSchema.from(newSchema);
         setters.init(outSchema);
 
         DataFactory factory = dataFactoryProvider.factoryFor(outSchema);
@@ -99,7 +167,7 @@ public class OperationTransformBuilder {
 
                 getters.current = data;
                 setters.writableData = factory.getWritableData();
-                process.forEach(Runnable::run);
+                processes.forEach(Runnable::run);
                 return factory.toData();
             }
         };
@@ -190,7 +258,7 @@ public class OperationTransformBuilder {
 
     static class Setters {
 
-        List<FieldValueSetter> setters = new ArrayList<>();
+        Map<String, FieldValueSetter> setters = new LinkedHashMap<>();
 
         private WritableData writableData;
 
@@ -200,12 +268,21 @@ public class OperationTransformBuilder {
 
             protected FieldSetter setter;
 
-            FieldValueSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
+            final Type type;
+
+            FieldValueSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc,
+                             Type type) {
                 this.setterFunc = setterFunc;
+                this.type = type;
             }
 
             void init(WriteSchema schema) {
                 this.setter = setterFunc.apply(schema);
+            }
+
+            @Override
+            public Type getType() {
+                return type;
             }
 
             @Override
@@ -265,14 +342,19 @@ public class OperationTransformBuilder {
         }
 
 
-        ValueSetter newSetter(Function<? super WriteSchema, ? extends FieldSetter> setterFunc) {
-            FieldValueSetter writer = new FieldValueSetter(setterFunc);
-            setters.add(writer);
+        ValueSetter newSetter(String name, Function<? super WriteSchema, ? extends FieldSetter> setterFunc,
+                              Type type) {
+            FieldValueSetter writer = new FieldValueSetter(setterFunc, type);
+            setters.put(name, writer);
             return writer;
         }
 
+        void removeSetter(String name) {
+            setters.remove(name);
+        }
+
         void init(WriteSchema outSchema) {
-            setters.forEach(setter -> setter.init(outSchema));
+            setters.values().forEach(setter -> setter.init(outSchema));
         }
     }
 }

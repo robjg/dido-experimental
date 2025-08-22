@@ -53,7 +53,7 @@ class ComplexOperationExampleTest {
 
         DidoTransform transform = OperationTransformBuilder.forSchema(schema)
                 .addOp(new MarkupOperation())
-                .create();
+                .build();
 
         DidoData result = transform.apply(data);
 

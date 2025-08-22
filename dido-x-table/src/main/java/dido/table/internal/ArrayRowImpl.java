@@ -42,7 +42,7 @@ public class ArrayRowImpl implements LiveRow {
                 value.changed = false;
             }
         }
-        if (changed) {
+        if (changed && receiver != null) {
             receiver.onData(new RowData());
         }
     }
@@ -54,11 +54,14 @@ public class ArrayRowImpl implements LiveRow {
         for (int i = 0; i < values.length; ++i) {
             if (values[i].changed) {
                 changed.add(i + 1);
+                values[i].changed = false;
             }
         }
-        int[] ai = changed.stream().mapToInt(Integer::intValue).toArray();
 
-        receiver.onPartial(PartialData.of(new RowData(), ai));
+        if (!changed.isEmpty() && receiver != null) {
+            int[] ai = changed.stream().mapToInt(Integer::intValue).toArray();
+            receiver.onPartial(PartialData.of(new RowData(), ai));
+        }
     }
 
     void load(DidoData data, List<Consumer<LiveRow>> operations) {

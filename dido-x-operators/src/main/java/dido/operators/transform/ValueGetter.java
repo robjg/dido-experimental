@@ -9,7 +9,7 @@ public interface ValueGetter {
 
     Object get();
 
-default boolean has() {
+    default boolean has() {
         return get() != null;
     }
 

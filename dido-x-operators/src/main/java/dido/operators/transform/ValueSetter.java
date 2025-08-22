@@ -1,6 +1,10 @@
 package dido.operators.transform;
 
+import java.lang.reflect.Type;
+
 public interface ValueSetter {
+
+    Type getType();
 
     void set(Object value);
 
