@@ -26,7 +26,7 @@ class ArrayPartialDataTest {
     void disparateFields() {
 
         PartialSchema partialSchema = ArrayPartialData.schemaFrom(schema)
-                .of("Colour", "Price");
+                .withNames("Colour", "Price");
 
         PartialData partialData = ArrayPartialData.withSchema(partialSchema)
                 .of("Green", 22.4);

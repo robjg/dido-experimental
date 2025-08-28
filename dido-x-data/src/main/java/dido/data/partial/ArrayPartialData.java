@@ -6,6 +6,7 @@ import dido.data.useful.AbstractData;
 import dido.data.useful.AbstractFieldGetter;
 import dido.data.useful.AbstractFieldSetter;
 import dido.data.useful.AbstractWritableData;
+import dido.data.util.FieldSelectionFactory;
 
 import java.util.HashMap;
 import java.util.Map;

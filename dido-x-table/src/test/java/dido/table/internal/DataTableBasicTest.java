@@ -61,12 +61,12 @@ class DataTableBasicTest {
 
         assertThat(test.keySet(), contains(1, 2, 3, 5));
 
-        test.onPartial(PartialData.fromSchema(schema).of(1, 2)
+        test.onPartial(PartialData.fromSchema(schema).withIndices(1, 2)
                 .of(5, "Grape"));
 
         assertThat(test.get(5), is(DidoData.of(5, "Grape", 12)));
 
-        test.onDelete(PartialData.fromSchema(schema).of(1)
+        test.onDelete(PartialData.fromSchema(schema).withIndices(1)
                 .of(3));
 
         assertThat(test.keySet(), contains(1, 2, 5));
@@ -98,13 +98,13 @@ class DataTableBasicTest {
         assertThat(recorder.results, contains("onData: 2, {[1:Id]=2, [2:Fruit]=Pear, [3:Qty]=14}"));
         recorder.results.clear();
 
-        test.onPartial(PartialData.fromSchema(schema).of(1, 2)
+        test.onPartial(PartialData.fromSchema(schema).withIndices(1, 2)
                 .of(5, "Grape"));
 
         assertThat(recorder.results, contains("onPartial: 5, {[1:Id]=5, [2:Fruit]=Grape}"));
         recorder.results.clear();
 
-        test.onDelete(PartialData.fromSchema(schema).of(1)
+        test.onDelete(PartialData.fromSchema(schema).withIndices(1)
                 .of(3));
 
         assertThat(recorder.results, contains("onDelete: 3"));
@@ -112,7 +112,7 @@ class DataTableBasicTest {
 
         close.close();
 
-        test.onDelete(PartialData.fromSchema(schema).of(1)
+        test.onDelete(PartialData.fromSchema(schema).withIndices(1)
                 .of(5));
 
         assertThat(recorder.results, empty());

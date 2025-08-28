@@ -2,6 +2,7 @@ package dido.data.partial;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
+import dido.data.util.FieldSelectionFactory;
 
 import java.util.Collection;
 

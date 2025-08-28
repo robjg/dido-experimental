@@ -61,7 +61,7 @@ class DataTableTest {
         assertThat(recorder.results, contains("onData: {[1:Id]=1, [2:Fruit]=Apple, [3:Qty]=7}"));
         recorder.results.clear();
 
-        test.onPartial(PartialData.fromSchema(schema).of("Id", "Qty").of(1, 5));
+        test.onPartial(PartialData.fromSchema(schema).withNames("Id", "Qty").of(1, 5));
 
         assertThat(recorder.results, contains("onPartial: {[1:Id]=1, [3:Qty]=5}"));
         recorder.results.clear();
