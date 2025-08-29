@@ -4,12 +4,18 @@ import dido.data.DataSchema;
 import dido.data.NoSuchFieldException;
 import dido.data.SchemaFactory;
 import dido.data.SchemaField;
-import dido.operators.transform.*;
+import dido.data.util.SubSchema;
+import dido.operators.transform.OperationContext;
+import dido.operators.transform.OperationDefinition;
+import dido.operators.transform.ValueGetter;
+import dido.operators.transform.ValueSetter;
 import dido.table.LiveRow;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -20,10 +26,13 @@ public class LiveOperationBuilder {
 
     private final SchemaFactory schemaFactory;
 
+    private final Set<String> outFields = new HashSet<>();
+
     private final List<OperationDefinition> opDefs = new ArrayList<>();
 
     private LiveOperationBuilder(SchemaFactory schemaFactory) {
         this.schemaFactory = schemaFactory;
+        outFields.addAll(schemaFactory.getFieldNames());
     }
 
     public static LiveOperationBuilder forSchema(DataSchema incomingSchema) {
@@ -103,15 +112,16 @@ public class LiveOperationBuilder {
             public ValueSetter setterNamed(String name, Type type) {
                 int index = schemaFactory.getIndexNamed(name);
                 if (index == 0) {
-                    index = schemaFactory.addSchemaField(SchemaField.of(0, name, type))
-                            .getIndex();
+                    SchemaField newField = schemaFactory.addSchemaField(SchemaField.of(0, name, type));
+                    index = newField.getIndex();
+                    outFields.add(newField.getName());
                 }
                 return rowManager.createValueSetter(schemaFactory.getTypeAt(index), index);
             }
 
             @Override
             public void removeNamed(String name) {
-                schemaFactory.removeNamed(name);
+                outFields.remove(name);
             }
         }
 
@@ -122,11 +132,17 @@ public class LiveOperationBuilder {
                 .toList();
 
         DataSchema schema = schemaFactory.toSchema();
+        DataSchema outSchema = SubSchema.from(schema).withNames(outFields);
 
         return new LiveOperation() {
             @Override
-            public DataSchema getResultantSchema() {
+            public DataSchema getFullSchema() {
                 return schema;
+            }
+
+            @Override
+            public DataSchema getOutSchema() {
+                return outSchema;
             }
 
             @Override

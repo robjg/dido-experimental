@@ -53,8 +53,8 @@ class MethodOperationBuilderTest {
 
         OurDidoSubscriber receiver = new OurDidoSubscriber();
 
-        ArrayRowImpl row = new ArrayRowImpl(op.getResultantSchema(), receiver);
-        row.onData(DidoData.withSchema(schema).of(2), List.of(op));
+        ArrayRowImpl row = new ArrayRowImpl(op.getFullSchema(), receiver);
+        row.onData(DidoData.withSchema(schema).of(2), op);
 
         assertThat(row.getValueNamed("Qty").get(), Matchers.is(4));
     }
@@ -86,8 +86,8 @@ class MethodOperationBuilderTest {
 
         OurDidoSubscriber receiver = new OurDidoSubscriber();
 
-        ArrayRowImpl row = new ArrayRowImpl(op.getResultantSchema(), receiver);
-        row.load(DidoData.withSchema(schema).of(2, 2), List.of(op));
+        ArrayRowImpl row = new ArrayRowImpl(op.getFullSchema(), receiver);
+        row.load(DidoData.withSchema(schema).of(2, 2), op);
 
         assertThat(row.getValueNamed("c").get(), Matchers.is(4));
     }

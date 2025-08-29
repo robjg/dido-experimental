@@ -7,8 +7,6 @@ import dido.operators.transform.BasicOperations;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 
 class LiveOperationBuilderTest {
@@ -31,7 +29,7 @@ class LiveOperationBuilderTest {
                 .build();
 
         ArrayRowImpl row = new ArrayRowImpl(schemaFactory.toSchema(), null);
-        row.onData(DidoData.withSchema(schema).of(2), List.of(consumer));
+        row.onData(DidoData.withSchema(schema).of(2), consumer);
 
         assertThat(row.getValueNamed("Qty").get(), Matchers.is(4));
     }

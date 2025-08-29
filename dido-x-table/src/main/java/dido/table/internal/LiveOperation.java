@@ -7,7 +7,8 @@ import java.util.function.Consumer;
 
 public interface LiveOperation extends Consumer<LiveRow> {
 
-    DataSchema getResultantSchema();
+    DataSchema getFullSchema();
 
+    DataSchema getOutSchema();
 
 }

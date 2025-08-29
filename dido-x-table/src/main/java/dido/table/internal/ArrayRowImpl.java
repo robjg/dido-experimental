@@ -32,8 +32,8 @@ public class ArrayRowImpl implements LiveRow {
         }
     }
 
-    void onData(DidoData data, List<Consumer<LiveRow>> operations) {
-        load(data, operations);
+    void onData(DidoData data, Consumer<LiveRow> ops) {
+        load(data, ops);
 
         boolean changed = false;
         for (ObjectLiveValue value : values) {
@@ -47,8 +47,8 @@ public class ArrayRowImpl implements LiveRow {
         }
     }
 
-    public void onPartial(PartialData partial, List<Consumer<LiveRow>> operations) {
-        load(partial, operations);
+    public void onPartial(PartialData partial, Consumer<LiveRow> ops) {
+        load(partial, ops);
 
         List<Integer> changed = new ArrayList<>();
         for (int i = 0; i < values.length; ++i) {
@@ -64,7 +64,11 @@ public class ArrayRowImpl implements LiveRow {
         }
     }
 
-    void load(DidoData data, List<Consumer<LiveRow>> operations) {
+    public DidoData asData() {
+        return new RowData();
+    }
+
+    void load(DidoData data, Consumer<LiveRow> operations) {
 
         DataSchema loadSchema = data.getSchema();
         for (SchemaField field : schema.getSchemaFields()) {
@@ -73,7 +77,7 @@ public class ArrayRowImpl implements LiveRow {
                 values[field.getIndex() - 1].set(data.getNamed(field.getName()));
             }
         }
-        operations.forEach(c -> c.accept(this));
+        operations.accept(this);
 
     }
 
