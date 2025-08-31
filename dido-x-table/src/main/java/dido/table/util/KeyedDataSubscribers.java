@@ -1,19 +1,25 @@
 package dido.table.util;
 
+import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialData;
-import dido.flow.QuietlyCloseable;
-import dido.table.DataTableSubscriber;
+import dido.table.KeyedSubscriber;
+import dido.table.KeyedSubscription;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class KeyedDataSubscribers<K extends Comparable<K>> implements DataTableSubscriber<K> {
+public class KeyedDataSubscribers<K extends Comparable<K>> implements KeyedSubscriber<K> {
 
-    private DataTableSubscriber<? super K> existing;
+    private final DataSchema schema;
+
+    private KeyedSubscriber<? super K> existing;
+
+    public KeyedDataSubscribers(DataSchema schema) {
+        this.schema = schema;
+    }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public QuietlyCloseable addSubscriber(DataTableSubscriber<? super K> additional) {
+    public KeyedSubscription addSubscriber(KeyedSubscriber<? super K> additional) {
 
         if (existing == null) {
             existing = additional;
@@ -28,7 +34,18 @@ public class KeyedDataSubscribers<K extends Comparable<K>> implements DataTableS
             existing = subscriberList;
         }
 
-        return () -> remove(additional);
+        return new KeyedSubscription() {
+
+            @Override
+            public DataSchema getSchema() {
+                return schema;
+            }
+
+            @Override
+            public void close() {
+                remove(additional);
+            }
+        };
     }
 
     @Override
@@ -39,20 +56,20 @@ public class KeyedDataSubscribers<K extends Comparable<K>> implements DataTableS
     }
 
     @Override
-    public void onPartial(K key, PartialData data) {
+    public void onPartial(K key, DidoData data) {
         if (existing != null) {
             existing.onPartial(key, data);
         }
     }
 
     @Override
-    public void onDelete(K key) {
+    public void onDelete(K key, DidoData data) {
         if (existing != null) {
-            existing.onDelete(key);
+            existing.onDelete(key, data);
         }
     }
 
-    void remove(DataTableSubscriber<? super K> subscriber) {
+    void remove(KeyedSubscriber<? super K> subscriber) {
         if (existing == subscriber) {
             existing = null;
         } else if (existing instanceof SubscriberList<? super K> list) {
@@ -63,9 +80,9 @@ public class KeyedDataSubscribers<K extends Comparable<K>> implements DataTableS
         }
     }
 
-    static class SubscriberList<K extends Comparable<K>> implements DataTableSubscriber<K> {
+    static class SubscriberList<K extends Comparable<K>> implements KeyedSubscriber<K> {
 
-        private final List<DataTableSubscriber<? super K>> consumers = new ArrayList<>();
+        private final List<KeyedSubscriber<? super K>> consumers = new ArrayList<>();
 
         @Override
         public void onData(K key, DidoData data) {
@@ -73,13 +90,13 @@ public class KeyedDataSubscribers<K extends Comparable<K>> implements DataTableS
         }
 
         @Override
-        public void onPartial(K key, PartialData data) {
+        public void onPartial(K key, DidoData data) {
             consumers.forEach(c -> c.onPartial(key, data));
         }
 
         @Override
-        public void onDelete(K key) {
-            consumers.forEach(c -> c.onDelete(key));
+        public void onDelete(K key, DidoData data) {
+            consumers.forEach(c -> c.onDelete(key, data));
         }
     }
 }

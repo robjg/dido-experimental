@@ -2,12 +2,12 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialData;
 import dido.flow.QuietlyCloseable;
 import dido.flow.util.KeyExtractor;
 import dido.table.CloseableTable;
 import dido.table.DataTable;
-import dido.table.DataTableSubscriber;
+import dido.table.KeyedSubscriber;
+import dido.table.KeyedSubscription;
 import dido.table.util.KeyedDataSubscribers;
 
 import java.util.*;
@@ -22,15 +22,16 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
 
     private final DataTable<K2> otherTable;
 
-    private final KeyedDataSubscribers<K1> subscribers = new KeyedDataSubscribers<>();
+    private final KeyedDataSubscribers<K1> subscribers;
 
     private final List<QuietlyCloseable> closeables = new ArrayList<>();
 
-    ForeignKeyedTable(DataTable<K2> otherTable) {
+    public ForeignKeyedTable(DataTable<K2> otherTable) {
         this.otherTable = otherTable;
+        subscribers = new KeyedDataSubscribers<>(otherTable.getSchema());
     }
 
-    class ReferenceTableSubscriber implements DataTableSubscriber<K2> {
+    class ReferenceTableSubscriber implements KeyedSubscriber<K2> {
         @Override
         public void onData(K2 key, DidoData data) {
             Set<K1> lefts = mappingFrom.get(key);
@@ -42,7 +43,7 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
         }
 
         @Override
-        public void onPartial(K2 key, PartialData data) {
+        public void onPartial(K2 key, DidoData data) {
             Set<K1> lefts = mappingFrom.get(key);
             if (lefts != null) {
                 for (K1 left : lefts) {
@@ -52,11 +53,11 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
         }
 
         @Override
-        public void onDelete(K2 key) {
+        public void onDelete(K2 key, DidoData data) {
             Set<K1> lefts = mappingFrom.get(key);
             if (lefts != null) {
                 for (K1 left : lefts) {
-                    subscribers.onDelete(left);
+                    subscribers.onDelete(left, data);
                 }
             }
         }
@@ -67,7 +68,7 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
 
         ForeignKeyedTable<K1, K2> table = new ForeignKeyedTable<>(referenceTable);
 
-        DataTableSubscriber<K1> childSubscriber = new DataTableSubscriber<K1>() {
+        KeyedSubscriber<K1> childSubscriber = new KeyedSubscriber<>() {
             @Override
             public void onData(K1 key, DidoData data) {
                 K2 other = keyExtractor.keyOf(data);
@@ -76,12 +77,12 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
             }
 
             @Override
-            public void onPartial(K1 key, PartialData data) {
+            public void onPartial(K1 key, DidoData data) {
                 // Nothing to do.
             }
 
             @Override
-            public void onDelete(K1 key) {
+            public void onDelete(K1 key, DidoData data) {
                 K2 other = table.mappingTo.remove(key);
                 Set<K1> set = table.mappingFrom.get(other);
                 set.remove(key);
@@ -141,7 +142,7 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
     }
 
     @Override
-    public QuietlyCloseable tableSubscribe(DataTableSubscriber<K1> listener) {
+    public KeyedSubscription tableSubscribe(KeyedSubscriber<K1> listener) {
         return subscribers.addSubscriber(listener);
     }
 

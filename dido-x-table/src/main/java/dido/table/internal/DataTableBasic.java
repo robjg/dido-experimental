@@ -5,13 +5,12 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.mutable.MutableArrayData;
 import dido.data.mutable.MutableData;
-import dido.data.partial.PartialData;
-import dido.flow.QuietlyCloseable;
 import dido.flow.DidoSubscriber;
 import dido.flow.util.KeyExtractor;
 import dido.flow.util.KeyExtractors;
 import dido.table.DataTable;
-import dido.table.DataTableSubscriber;
+import dido.table.KeyedSubscriber;
+import dido.table.KeyedSubscription;
 import dido.table.util.KeyedDataSubscribers;
 
 import java.util.Map;
@@ -26,11 +25,12 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Di
 
     private final Map<K, MutableData> rows = new TreeMap<>();
 
-    private final KeyedDataSubscribers<K> subscribers = new KeyedDataSubscribers<>();
+    private final KeyedDataSubscribers<K> subscribers;
 
     DataTableBasic(DataSchema schema, KeyExtractor<K> keyExtractor) {
         this.schema = schema;
         this.keyExtractor = keyExtractor;
+        this.subscribers = new KeyedDataSubscribers<>(schema);
     }
 
     public static class Settings<K extends Comparable<K>> {
@@ -87,7 +87,7 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Di
     }
 
     @Override
-    public QuietlyCloseable tableSubscribe(DataTableSubscriber<K> listener) {
+    public KeyedSubscription tableSubscribe(KeyedSubscriber<K> listener) {
         return subscribers.addSubscriber(listener);
     }
 
@@ -103,7 +103,7 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Di
     }
 
     @Override
-    public void onPartial(PartialData partial) {
+    public void onPartial(DidoData partial) {
 
         K key = keyExtractor.keyOf(partial);
 
@@ -135,6 +135,6 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Di
             throw new IllegalArgumentException("No row for key " + key);
         }
 
-        subscribers.onDelete(key);
+        subscribers.onDelete(key, keyData);
     }
 }

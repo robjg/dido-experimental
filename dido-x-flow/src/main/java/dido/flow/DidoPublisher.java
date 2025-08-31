@@ -1,7 +1,6 @@
 package dido.flow;
 
 import dido.data.DidoData;
-import dido.data.partial.PartialData;
 
 import java.util.function.Consumer;
 
@@ -17,7 +16,7 @@ public interface DidoPublisher {
             }
 
             @Override
-            public void onPartial(PartialData partial) {
+            public void onPartial(DidoData partial) {
                 consumer.accept(partial);
             }
 

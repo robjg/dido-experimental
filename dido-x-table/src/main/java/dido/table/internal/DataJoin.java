@@ -2,7 +2,6 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialData;
 import dido.data.util.EmptyData;
 import dido.flow.QuietlyCloseable;
 import dido.flow.util.KeyExtractor;
@@ -10,10 +9,14 @@ import dido.flow.util.KeyExtractorProvider;
 import dido.operators.Concatenator;
 import dido.table.CloseableTable;
 import dido.table.DataTable;
-import dido.table.DataTableSubscriber;
+import dido.table.KeyedSubscriber;
+import dido.table.KeyedSubscription;
 import dido.table.util.KeyedDataSubscribers;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class DataJoin<K extends Comparable<K>>
@@ -25,7 +28,7 @@ public class DataJoin<K extends Comparable<K>>
     private static class LeftJoinToken {
     }
 
-    private final KeyedDataSubscribers<K> subscribers = new KeyedDataSubscribers<>();
+    private final KeyedDataSubscribers<K> subscribers;
 
     private final Concatenator concatenator;
 
@@ -53,6 +56,7 @@ public class DataJoin<K extends Comparable<K>>
 
         this.concatenator = Concatenator.fromSchemas(left.getSchema(), right.getSchema());
         this.additionalClosable = additionalClosable;
+        this.subscribers = new KeyedDataSubscribers<>(concatenator.getSchema());
     }
 
     private DataJoin(DataTable<K> left,
@@ -71,6 +75,7 @@ public class DataJoin<K extends Comparable<K>>
 
         this.concatenator = Concatenator.fromSchemas(left.getSchema(), right.getSchema());
         this.additionalClosable = additionalClosable;
+        this.subscribers = new KeyedDataSubscribers<>(concatenator.getSchema());
     }
 
     public static class From<K extends Comparable<K>> {
@@ -173,7 +178,7 @@ public class DataJoin<K extends Comparable<K>>
     }
 
     @Override
-    public QuietlyCloseable tableSubscribe(DataTableSubscriber<K> listener) {
+    public KeyedSubscription tableSubscribe(KeyedSubscriber<K> listener) {
         return subscribers.addSubscriber(listener);
     }
 
@@ -205,7 +210,7 @@ public class DataJoin<K extends Comparable<K>>
 
         InnerJoin() {
 
-            leftClose = left.tableSubscribe(new DataTableSubscriber<K>() {
+            leftClose = left.tableSubscribe(new KeyedSubscriber<K>() {
                 @Override
                 public void onData(K key, DidoData data) {
                     DidoData combined = get(key);
@@ -215,20 +220,22 @@ public class DataJoin<K extends Comparable<K>>
                 }
 
                 @Override
-                public void onPartial(K key, PartialData data) {
+                public void onPartial(K key, DidoData data) {
                     if (containsKey(key)) {
                         subscribers.onPartial(key, data);
                     }
                 }
 
                 @Override
-                public void onDelete(K key) {
-                    if (right.containsKey(key)) {
-                        subscribers.onDelete(key);
+                public void onDelete(K key, DidoData data) {
+                    DidoData rightData = right.get(key);
+                    if (rightData != null) {
+                        subscribers.onDelete(key,
+                                concatenator.concat(data, rightData));
                     }
                 }
             });
-            rightClose = right.tableSubscribe(new DataTableSubscriber<K>() {
+            rightClose = right.tableSubscribe(new KeyedSubscriber<>() {
                 @Override
                 public void onData(K key, DidoData data) {
                     DidoData combined = get(key);
@@ -238,16 +245,18 @@ public class DataJoin<K extends Comparable<K>>
                 }
 
                 @Override
-                public void onPartial(K key, PartialData data) {
+                public void onPartial(K key, DidoData data) {
                     if (containsKey(key)) {
                         subscribers.onPartial(key, data);
                     }
                 }
 
                 @Override
-                public void onDelete(K key) {
-                    if (right.containsKey(key)) {
-                        subscribers.onDelete(key);
+                public void onDelete(K key, DidoData data) {
+                    DidoData leftData = left.get(key);
+                    if (leftData != null) {
+                        subscribers.onDelete(key,
+                                concatenator.concat(leftData, data));
                     }
                 }
             });
@@ -299,23 +308,31 @@ public class DataJoin<K extends Comparable<K>>
 
         LeftJoin() {
 
-            leftClose = left.tableSubscribe(new DataTableSubscriber<K>() {
+            leftClose = left.tableSubscribe(new KeyedSubscriber<K>() {
                 @Override
                 public void onData(K key, DidoData data) {
                     subscribers.onData(key, get(key));
                 }
 
                 @Override
-                public void onPartial(K key, PartialData data) {
-                    subscribers.onPartial(key, data);
+                public void onPartial(K key, DidoData data) {
+                    subscribers.onPartial(key, concatenator.concat(data, null));
                 }
 
                 @Override
-                public void onDelete(K key) {
-                    subscribers.onDelete(key);
+                public void onDelete(K key, DidoData data) {
+                    DidoData rightData = right.get(key);
+                    if (rightData == null) {
+                        subscribers.onDelete(key,
+                                concatenator.concat(data, null));
+                    }
+                    else {
+                        subscribers.onDelete(key,
+                                concatenator.concat(data, rightData));
+                    }
                 }
             });
-            rightClose = right.tableSubscribe(new DataTableSubscriber<K>() {
+            rightClose = right.tableSubscribe(new KeyedSubscriber<K>() {
                 @Override
                 public void onData(K key, DidoData data) {
                     DidoData combined = get(key);
@@ -325,18 +342,18 @@ public class DataJoin<K extends Comparable<K>>
                 }
 
                 @Override
-                public void onPartial(K key, PartialData data) {
-                    if (containsKey(key)) {
-                        subscribers.onPartial(key, data);
+                public void onPartial(K key, DidoData data) {
+                    if (left.containsKey(key)) {
+                        subscribers.onPartial(key, concatenator.concat(null, data));
                     }
                 }
 
                 @Override
-                public void onDelete(K key) {
-                    if (containsKey(key)) {
+                public void onDelete(K key, DidoData data) {
+                    DidoData leftData = left.get(key);
+                    if (leftData != null) {
                         subscribers.onPartial(key,
-                                PartialData.of(EmptyData.withSchema(getSchema()),
-                                        right.getSchema().getFieldNames()));
+                                concatenator.concat(leftData, null));
                     }
                 }
             });

@@ -1,9 +1,8 @@
 package dido.table.util;
 
 import dido.data.DidoData;
-import dido.data.partial.PartialData;
 import dido.flow.QuietlyCloseable;
-import dido.table.DataTableSubscriber;
+import dido.table.KeyedSubscriber;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -12,9 +11,9 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-class DataTableSubscribersTest {
+class KeyedSubscribersTest {
 
-    static class OurSubscriber implements DataTableSubscriber<Integer> {
+    static class OurSubscriber implements KeyedSubscriber<Integer> {
 
         List<String> results = new ArrayList<>();
 
@@ -24,34 +23,38 @@ class DataTableSubscribersTest {
         }
 
         @Override
-        public void onPartial(Integer key, PartialData data) {
+        public void onPartial(Integer key, DidoData data) {
             results.add("onPartial: " + key + "=" + data);
         }
 
         @Override
-        public void onDelete(Integer key) {
-            results.add("onDelete: " + key);
+        public void onDelete(Integer key, DidoData data) {
+            results.add("onDelete: " + key + "=" + data);
         }
     }
 
     @Test
     void replaceAsExpected() {
 
-        KeyedDataSubscribers<Integer> test = new KeyedDataSubscribers<>();
+        DidoData apple = DidoData.of("Apple");
 
-        test.onData(1, DidoData.of("Apple"));
-        test.onPartial(1, PartialData.of(DidoData.of("Apple"), 1));
-        test.onDelete(1);
+        KeyedDataSubscribers<Integer> test = new KeyedDataSubscribers<>(apple.getSchema());
+
+        test.onData(1, apple);
+        test.onPartial(1, apple);
+        test.onDelete(1, apple);
 
         OurSubscriber s1 = new OurSubscriber();
 
         QuietlyCloseable close1 = test.addSubscriber(s1);
 
-        test.onData(2, DidoData.of("Orange"));
-        test.onPartial(2, PartialData.of(DidoData.of("Orange"), 1));
-        test.onDelete(2);
+        DidoData orange = DidoData.of("Orange");
 
-        assertThat(s1.results, contains("onData: 2={[1:f_1]=Orange}", "onPartial: 2={[1:f_1]=Orange}", "onDelete: 2"));
+        test.onData(2, orange);
+        test.onPartial(2, orange);
+        test.onDelete(2, orange);
+
+        assertThat(s1.results, contains("onData: 2={[1:f_1]=Orange}", "onPartial: 2={[1:f_1]=Orange}", "onDelete: 2={[1:f_1]=Orange}"));
 
         s1.results.clear();
 

@@ -47,7 +47,7 @@ public class ArrayRowImpl implements LiveRow {
         }
     }
 
-    public void onPartial(PartialData partial, Consumer<LiveRow> ops) {
+    public void onPartial(DidoData partial, Consumer<LiveRow> ops) {
         load(partial, ops);
 
         List<Integer> changed = new ArrayList<>();

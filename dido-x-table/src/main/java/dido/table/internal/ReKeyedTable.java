@@ -2,12 +2,12 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialData;
 import dido.flow.QuietlyCloseable;
 import dido.flow.util.KeyExtractor;
 import dido.table.CloseableTable;
 import dido.table.DataTable;
-import dido.table.DataTableSubscriber;
+import dido.table.KeyedSubscriber;
+import dido.table.KeyedSubscription;
 import dido.table.util.KeyedDataSubscribers;
 
 import java.util.*;
@@ -29,12 +29,13 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
 
     private final DataTable<K2> otherTable;
 
-    private final KeyedDataSubscribers<K1> subscribers = new KeyedDataSubscribers<>();
+    private final KeyedDataSubscribers<K1> subscribers;
 
     private final List<QuietlyCloseable> closeables = new ArrayList<>();
 
-    ReKeyedTable(DataTable<K2> otherTable) {
+    public ReKeyedTable(DataTable<K2> otherTable) {
         this.otherTable = otherTable;
+        subscribers = new KeyedDataSubscribers<>(otherTable.getSchema());
     }
 
     public static <K1 extends Comparable<K1>, K2 extends Comparable<K2>>
@@ -42,7 +43,7 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
 
         ReKeyedTable<K1, K2> table = new ReKeyedTable<>(existingTable);
 
-        DataTableSubscriber<K2> existingSubscriber = new DataTableSubscriber<>() {
+        KeyedSubscriber<K2> existingSubscriber = new KeyedSubscriber<>() {
             @Override
             public void onData(K2 other, DidoData data) {
                 K1 key = keyExtractor.keyOf(data);
@@ -55,18 +56,18 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
             }
 
             @Override
-            public void onPartial(K2 key, PartialData partial) {
+            public void onPartial(K2 key, DidoData partial) {
                 K1 left = table.mappingFrom.get(key);
                 table.subscribers.onPartial(left, partial);
             }
 
             @Override
-            public void onDelete(K2 other) {
+            public void onDelete(K2 other, DidoData data) {
                 K1 left = table.mappingFrom.remove(other);
                 Set<K2> others = table.otherMappings.get(left);
                 if (others == null) {
                     table.mappingTo.remove(left);
-                    table.subscribers.onDelete(left);
+                    table.subscribers.onDelete(left, data);
                 }
                 else {
                     K2 next = others.iterator().next();
@@ -130,7 +131,7 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
     }
 
     @Override
-    public QuietlyCloseable tableSubscribe(DataTableSubscriber<K1> listener) {
+    public KeyedSubscription tableSubscribe(KeyedSubscriber<K1> listener) {
         return subscribers.addSubscriber(listener);
     }
 

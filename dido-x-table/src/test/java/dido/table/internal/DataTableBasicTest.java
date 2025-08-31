@@ -4,7 +4,7 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 import dido.flow.QuietlyCloseable;
-import dido.table.DataTableSubscriber;
+import dido.table.KeyedSubscriber;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import static org.hamcrest.Matchers.*;
 
 class DataTableBasicTest {
 
-    static class Recorder implements DataTableSubscriber<Integer> {
+    static class Recorder implements KeyedSubscriber<Integer> {
 
         List<String> results = new ArrayList<>();
 
@@ -25,13 +25,13 @@ class DataTableBasicTest {
         }
 
         @Override
-        public void onPartial(Integer key, PartialData data) {
+        public void onPartial(Integer key, DidoData data) {
             results.add("onPartial: " + key + ", " + data);
         }
 
         @Override
-        public void onDelete(Integer key) {
-            results.add("onDelete: " + key);
+        public void onDelete(Integer key, DidoData data) {
+            results.add("onDelete: " + key+ ", " + data);
         }
     }
 
@@ -107,7 +107,7 @@ class DataTableBasicTest {
         test.onDelete(PartialData.fromSchema(schema).withIndices(1)
                 .of(3));
 
-        assertThat(recorder.results, contains("onDelete: 3"));
+        assertThat(recorder.results, contains("onDelete: 3, {[1:Id]=3}"));
         recorder.results.clear();
 
         close.close();

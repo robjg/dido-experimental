@@ -3,6 +3,7 @@ package dido.table;
 import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
+import dido.data.util.SubSchema;
 import dido.flow.DidoSubscriber;
 import dido.flow.DidoSubscription;
 import dido.table.internal.DataTableBasic;
@@ -27,7 +28,7 @@ class DataTableTest {
         }
 
         @Override
-        public void onPartial(PartialData data) {
+        public void onPartial(DidoData data) {
             results.add("onPartial: " + data);
         }
 
@@ -66,10 +67,10 @@ class DataTableTest {
         assertThat(recorder.results, contains("onPartial: {[1:Id]=1, [3:Qty]=5}"));
         recorder.results.clear();
 
-        test.onDelete(DidoData.of(1));
+        test.onDelete(DidoData.withSchema(SubSchema.from(schema).withIndices(1))
+                .of(1));
 
-        // Todo: fix this
-        assertThat(recorder.results, contains("onDelete: null"));
+        assertThat(recorder.results, contains("onDelete: {[1:Id]=1}"));
         recorder.results.clear();
 
         subscription.close();

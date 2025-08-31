@@ -2,7 +2,6 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialData;
 import dido.flow.DidoSubscriber;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -19,7 +18,7 @@ class MethodOperationBuilderTest {
 
         List<DidoData> data = new ArrayList<>();
 
-        List<PartialData> partial = new ArrayList<>();
+        List<DidoData> partial = new ArrayList<>();
 
         @Override
         public void onData(DidoData data) {
@@ -27,7 +26,7 @@ class MethodOperationBuilderTest {
         }
 
         @Override
-        public void onPartial(PartialData partial) {
+        public void onPartial(DidoData partial) {
             this.partial.add(partial);
         }
 

@@ -2,7 +2,6 @@ package dido.table;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialData;
 import dido.flow.DidoPublisher;
 import dido.flow.DidoSubscriber;
 import dido.flow.DidoSubscription;
@@ -23,24 +22,24 @@ public interface DataTable<K extends Comparable<K>> extends DidoPublisher {
 
     DidoData get(K key);
 
-    QuietlyCloseable tableSubscribe(DataTableSubscriber<K> listener);
+    KeyedSubscription tableSubscribe(KeyedSubscriber<K> listener);
 
     @Override
     default DidoSubscription didoSubscribe(DidoSubscriber subscriber) {
-        QuietlyCloseable close = tableSubscribe(new DataTableSubscriber<K>() {
+        QuietlyCloseable close = tableSubscribe(new KeyedSubscriber<>() {
             @Override
             public void onData(K key, DidoData data) {
                 subscriber.onData(data);
             }
 
             @Override
-            public void onPartial(K key, PartialData data) {
+            public void onPartial(K key, DidoData data) {
                 subscriber.onPartial(data);
             }
 
             @Override
-            public void onDelete(K key) {
-                subscriber.onDelete(get(key));
+            public void onDelete(K key, DidoData data) {
+                subscriber.onDelete(data);
             }
         });
 

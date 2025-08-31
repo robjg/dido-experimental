@@ -2,14 +2,13 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialData;
 import dido.flow.DidoSubscriber;
-import dido.flow.QuietlyCloseable;
 import dido.flow.util.KeyExtractor;
 import dido.flow.util.KeyExtractorProvider;
 import dido.flow.util.KeyExtractors;
 import dido.operators.transform.OperationDefinition;
-import dido.table.DataTableSubscriber;
+import dido.table.KeyedSubscriber;
+import dido.table.KeyedSubscription;
 import dido.table.LiveRow;
 import dido.table.LiveTable;
 import dido.table.util.KeyedDataSubscribers;
@@ -27,7 +26,7 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
 
     private final LiveOperation ops;
 
-    private final KeyedDataSubscribers<K> subscribers = new KeyedDataSubscribers<>();
+    private final KeyedDataSubscribers<K> subscribers;
 
     private final List<DidoSubscriber> didoSubscribers = new ArrayList<>();
 
@@ -37,18 +36,16 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
         this.keyExtractor = settings.keyExtractor == null ?
                 ((KeyExtractorProvider<K>)KeyExtractors.fromFirstField())
                         .keyExtractorFor(schema) : settings.keyExtractor;
+        this.subscribers = new KeyedDataSubscribers<>(schema);
     }
 
     public static class Settings<K extends Comparable<K>> {
-
-        private final DataSchema schema;
 
         private final LiveOperationBuilder operationBuilder;
 
         private KeyExtractor<? extends K> keyExtractor;
 
         public Settings(DataSchema schema) {
-            this.schema = schema;
             this.operationBuilder = LiveOperationBuilder.forSchema(schema);
         }
 
@@ -80,7 +77,7 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
         }
 
         @Override
-        public void onPartial(PartialData partial) {
+        public void onPartial(DidoData partial) {
             didoSubscribers.forEach(r -> r.onPartial(partial));
         }
 
@@ -103,7 +100,7 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
     }
 
     @Override
-    public void onPartial(PartialData partial) {
+    public void onPartial(DidoData partial) {
 
         ArrayRowImpl arrayRow = Objects.requireNonNull(
                 rows.get(keyExtractor.keyOf(partial)), "Failed to find row for " + partial);
@@ -151,7 +148,7 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
     }
 
     @Override
-    public QuietlyCloseable tableSubscribe(DataTableSubscriber<K> listener) {
+    public KeyedSubscription tableSubscribe(KeyedSubscriber<K> listener) {
         return subscribers.addSubscriber(listener);
     }
 
