@@ -2,7 +2,7 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.SchemaBuilder;
+import dido.data.schema.SchemaBuilder;
 import dido.flow.util.KeyExtractors;
 import org.junit.jupiter.api.Test;
 

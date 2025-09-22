@@ -2,7 +2,7 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.SchemaBuilder;
+import dido.data.schema.SchemaBuilder;
 import dido.operators.transform.BasicOperations;
 import dido.operators.transform.ValueGetter;
 import dido.operators.transform.ValueSetter;
