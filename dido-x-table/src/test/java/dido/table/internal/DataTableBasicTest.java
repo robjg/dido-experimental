@@ -2,7 +2,8 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialData;
+import dido.data.partial.PartialUpdate;
+import dido.data.schema.SubSchema;
 import dido.flow.QuietlyCloseable;
 import dido.table.KeyedSubscriber;
 import org.junit.jupiter.api.Test;
@@ -25,8 +26,8 @@ class DataTableBasicTest {
         }
 
         @Override
-        public void onPartial(Integer key, DidoData data) {
-            results.add("onPartial: " + key + ", " + data);
+        public void onPartial(Integer key, PartialUpdate partial) {
+            results.add("onPartial: " + key + ", " + partial.getData());
         }
 
         @Override
@@ -61,13 +62,14 @@ class DataTableBasicTest {
 
         assertThat(test.keySet(), contains(1, 2, 3, 5));
 
-        test.onPartial(PartialData.fromSchema(schema).withIndices(1, 2)
-                .of(5, "Grape"));
+        SubSchema subSchema = SubSchema.from(schema).withIndices(1, 2);
+
+        test.onPartial(PartialUpdate.from(DidoData.withSchema(subSchema).of(5, "Grape"))
+                .withIndices(subSchema.getIndices()));
 
         assertThat(test.get(5), is(DidoData.of(5, "Grape", 12)));
 
-        test.onDelete(PartialData.fromSchema(schema).withIndices(1)
-                .of(3));
+        test.onDelete(DidoData.of(3));
 
         assertThat(test.keySet(), contains(1, 2, 5));
     }
@@ -98,22 +100,20 @@ class DataTableBasicTest {
         assertThat(recorder.results, contains("onData: 2, {[1:Id]=2, [2:Fruit]=Pear, [3:Qty]=14}"));
         recorder.results.clear();
 
-        test.onPartial(PartialData.fromSchema(schema).withIndices(1, 2)
-                .of(5, "Grape"));
+        test.onPartial(PartialUpdate.of(
+                DidoData.withSchema(SubSchema.from(schema).withIndices(1, 2)).of(5, "Grape")));
 
         assertThat(recorder.results, contains("onPartial: 5, {[1:Id]=5, [2:Fruit]=Grape}"));
         recorder.results.clear();
 
-        test.onDelete(PartialData.fromSchema(schema).withIndices(1)
-                .of(3));
+        test.onDelete(DidoData.withSchema(SubSchema.from(schema).withIndices(1)).of(3));
 
         assertThat(recorder.results, contains("onDelete: 3, {[1:Id]=3}"));
         recorder.results.clear();
 
         close.close();
 
-        test.onDelete(PartialData.fromSchema(schema).withIndices(1)
-                .of(5));
+        test.onDelete(DidoData.withSchema(SubSchema.from(schema).withIndices(1)).of(5));
 
         assertThat(recorder.results, empty());
     }

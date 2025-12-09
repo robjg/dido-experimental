@@ -2,6 +2,7 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
+import dido.data.partial.PartialUpdate;
 import dido.flow.QuietlyCloseable;
 import dido.flow.util.KeyExtractor;
 import dido.table.CloseableTable;
@@ -43,7 +44,7 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
         }
 
         @Override
-        public void onPartial(K2 key, DidoData data) {
+        public void onPartial(K2 key, PartialUpdate data) {
             Set<K1> lefts = mappingFrom.get(key);
             if (lefts != null) {
                 for (K1 left : lefts) {
@@ -77,7 +78,7 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
             }
 
             @Override
-            public void onPartial(K1 key, DidoData data) {
+            public void onPartial(K1 key, PartialUpdate data) {
                 // Nothing to do.
             }
 

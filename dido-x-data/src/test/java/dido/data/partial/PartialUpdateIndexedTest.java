@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-class ArrayPartialDataTest {
+class PartialUpdateIndexedTest {
 
     DataSchema schema = DataSchema.builder()
             .addNamed("Id", String.class)
@@ -21,16 +21,13 @@ class ArrayPartialDataTest {
     DidoData fruit = DidoData.withSchema(schema)
             .of("F1", "Apple", "Red", 5, 27.3, 2);
 
-
     @Test
-    void disparateFields() {
+    void simpleCreate() {
 
-        PartialSchema partialSchema = ArrayPartialData.schemaFrom(schema)
-                .withNames("Colour", "Price");
+        PartialUpdate partialUpdate = PartialUpdateIndexed.of(fruit, 2, 5, 6);
 
-        PartialData partialData = ArrayPartialData.withSchema(partialSchema)
-                .of("Green", 22.4);
+        assertThat(partialUpdate.getData(), is(fruit));
+        assertThat(partialUpdate.getIndices(), is(new int[] { 2, 5, 6}));
 
-        assertThat(partialData, is(DidoData.of("Green", 22.4)));
     }
 }

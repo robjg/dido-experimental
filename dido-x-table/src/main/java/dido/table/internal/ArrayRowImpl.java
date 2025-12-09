@@ -3,8 +3,8 @@ package dido.table.internal;
 import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.NoSuchFieldException;
-import dido.data.SchemaField;
-import dido.data.partial.PartialData;
+import dido.data.partial.IndexSequence;
+import dido.data.partial.PartialUpdate;
 import dido.data.useful.AbstractData;
 import dido.flow.DidoSubscriber;
 import dido.table.LiveRow;
@@ -33,7 +33,7 @@ public class ArrayRowImpl implements LiveRow {
     }
 
     void onData(DidoData data, Consumer<LiveRow> ops) {
-        load(data, ops);
+        load(IndexSequence.fromSchema(data.getSchema()), data, ops);
 
         boolean changed = false;
         for (ObjectLiveValue value : values) {
@@ -47,8 +47,8 @@ public class ArrayRowImpl implements LiveRow {
         }
     }
 
-    public void onPartial(DidoData partial, Consumer<LiveRow> ops) {
-        load(partial, ops);
+    public void onPartial(PartialUpdate partial, Consumer<LiveRow> ops) {
+        load(partial, partial.getData(), ops);
 
         List<Integer> changed = new ArrayList<>();
         for (int i = 0; i < values.length; ++i) {
@@ -60,7 +60,7 @@ public class ArrayRowImpl implements LiveRow {
 
         if (!changed.isEmpty() && didoSubscriber != null) {
             int[] ai = changed.stream().mapToInt(Integer::intValue).toArray();
-            didoSubscriber.onPartial(PartialData.of(new RowData(), ai));
+            didoSubscriber.onPartial(PartialUpdate.from(new RowData()).withIndices(ai));
         }
     }
 
@@ -68,13 +68,12 @@ public class ArrayRowImpl implements LiveRow {
         return new RowData();
     }
 
-    void load(DidoData data, Consumer<LiveRow> operations) {
+    void load(IndexSequence indices, DidoData data, Consumer<LiveRow> operations) {
 
-        DataSchema loadSchema = data.getSchema();
-        for (SchemaField field : schema.getSchemaFields()) {
+        for (int index = indices.firstIndex(); index > 0; index = indices.nextIndex(index)) {
 
-            if (loadSchema.hasNamed(field.getName())) {
-                values[field.getIndex() - 1].set(data.getNamed(field.getName()));
+            if (schema.hasIndex(index)) {
+                values[index - 1].set(data.getAt(index));
             }
         }
         operations.accept(this);

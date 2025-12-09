@@ -4,7 +4,7 @@ import dido.data.DataSchema;
 import dido.data.NoSuchFieldException;
 import dido.data.SchemaFactory;
 import dido.data.SchemaField;
-import dido.data.util.SubSchema;
+import dido.data.schema.SubSchema;
 import dido.operators.transform.OperationContext;
 import dido.operators.transform.OperationDefinition;
 import dido.operators.transform.ValueGetter;

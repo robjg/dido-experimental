@@ -2,6 +2,7 @@ package dido.table.util;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
+import dido.data.partial.PartialUpdate;
 import dido.table.KeyedSubscriber;
 import dido.table.KeyedSubscription;
 
@@ -56,7 +57,7 @@ public class KeyedDataSubscribers<K extends Comparable<K>> implements KeyedSubsc
     }
 
     @Override
-    public void onPartial(K key, DidoData data) {
+    public void onPartial(K key, PartialUpdate data) {
         if (existing != null) {
             existing.onPartial(key, data);
         }
@@ -90,7 +91,7 @@ public class KeyedDataSubscribers<K extends Comparable<K>> implements KeyedSubsc
         }
 
         @Override
-        public void onPartial(K key, DidoData data) {
+        public void onPartial(K key, PartialUpdate data) {
             consumers.forEach(c -> c.onPartial(key, data));
         }
 

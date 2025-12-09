@@ -2,7 +2,9 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
+import dido.data.partial.PartialUpdate;
 import dido.flow.DidoSubscriber;
+import dido.flow.DidoSubscription;
 import dido.flow.util.KeyExtractor;
 import dido.flow.util.KeyExtractorProvider;
 import dido.flow.util.KeyExtractors;
@@ -77,7 +79,7 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
         }
 
         @Override
-        public void onPartial(DidoData partial) {
+        public void onPartial(PartialUpdate partial) {
             didoSubscribers.forEach(r -> r.onPartial(partial));
         }
 
@@ -100,10 +102,12 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
     }
 
     @Override
-    public void onPartial(DidoData partial) {
+    public void onPartial(PartialUpdate partial) {
+
+        DidoData data = partial.getData();
 
         ArrayRowImpl arrayRow = Objects.requireNonNull(
-                rows.get(keyExtractor.keyOf(partial)), "Failed to find row for " + partial);
+                rows.get(keyExtractor.keyOf(data)), "Failed to find row for " + partial);
 
         arrayRow.onPartial(partial, ops);
     }

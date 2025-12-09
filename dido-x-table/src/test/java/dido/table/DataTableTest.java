@@ -2,8 +2,8 @@ package dido.table;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialData;
-import dido.data.util.SubSchema;
+import dido.data.partial.PartialUpdate;
+import dido.data.schema.SubSchema;
 import dido.flow.DidoSubscriber;
 import dido.flow.DidoSubscription;
 import dido.table.internal.DataTableBasic;
@@ -28,8 +28,8 @@ class DataTableTest {
         }
 
         @Override
-        public void onPartial(DidoData data) {
-            results.add("onPartial: " + data);
+        public void onPartial(PartialUpdate partial) {
+            results.add("onPartial: " + partial);
         }
 
         @Override
@@ -62,7 +62,10 @@ class DataTableTest {
         assertThat(recorder.results, contains("onData: {[1:Id]=1, [2:Fruit]=Apple, [3:Qty]=7}"));
         recorder.results.clear();
 
-        test.onPartial(PartialData.fromSchema(schema).withNames("Id", "Qty").of(1, 5));
+        DataSchema subSchema = SubSchema.from(schema).withNames("Id", "Qty");
+
+        test.onPartial(PartialUpdate.from(DidoData.withSchema(subSchema).of(1, 5))
+                .withIndices(subSchema.getIndices()));
 
         assertThat(recorder.results, contains("onPartial: {[1:Id]=1, [3:Qty]=5}"));
         recorder.results.clear();

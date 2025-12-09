@@ -5,6 +5,7 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.mutable.MutableArrayData;
 import dido.data.mutable.MutableData;
+import dido.data.partial.PartialUpdate;
 import dido.flow.DidoSubscriber;
 import dido.flow.util.KeyExtractor;
 import dido.flow.util.KeyExtractors;
@@ -103,19 +104,20 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Di
     }
 
     @Override
-    public void onPartial(DidoData partial) {
+    public void onPartial(PartialUpdate partial) {
 
-        K key = keyExtractor.keyOf(partial);
+        DidoData data = partial.getData();
+
+        K key = keyExtractor.keyOf(data);
 
         MutableData row = rows.get(key);
         if (row == null) {
             throw new IllegalArgumentException("No row for key " + key);
         }
 
-        DataSchema incomingSchema = partial.getSchema();
-        for (int index : incomingSchema.getIndices()) {
-            if (partial.hasAt(index)) {
-                row.setAt(index, partial.getAt(index));
+        for (int index : partial.getIndices()) {
+            if (data.hasAt(index)) {
+                row.setAt(index, data.getAt(index));
             }
             else {
                 row.clearAt(index);

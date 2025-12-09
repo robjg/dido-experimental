@@ -2,6 +2,8 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
+import dido.data.partial.IndexSequence;
+import dido.data.partial.PartialUpdate;
 import dido.data.util.EmptyData;
 import dido.flow.QuietlyCloseable;
 import dido.flow.util.KeyExtractor;
@@ -220,7 +222,7 @@ public class DataJoin<K extends Comparable<K>>
                 }
 
                 @Override
-                public void onPartial(K key, DidoData data) {
+                public void onPartial(K key, PartialUpdate data) {
                     if (containsKey(key)) {
                         subscribers.onPartial(key, data);
                     }
@@ -245,7 +247,7 @@ public class DataJoin<K extends Comparable<K>>
                 }
 
                 @Override
-                public void onPartial(K key, DidoData data) {
+                public void onPartial(K key, PartialUpdate data) {
                     if (containsKey(key)) {
                         subscribers.onPartial(key, data);
                     }
@@ -315,8 +317,10 @@ public class DataJoin<K extends Comparable<K>>
                 }
 
                 @Override
-                public void onPartial(K key, DidoData data) {
-                    subscribers.onPartial(key, concatenator.concat(data, null));
+                public void onPartial(K key, PartialUpdate partial) {
+                    subscribers.onPartial(key, PartialUpdate
+                            .from(concatenator.concat(partial.getData(), null))
+                            .withIndices(partial.getIndices()));
                 }
 
                 @Override
@@ -342,9 +346,12 @@ public class DataJoin<K extends Comparable<K>>
                 }
 
                 @Override
-                public void onPartial(K key, DidoData data) {
+                public void onPartial(K key, PartialUpdate partial) {
                     if (left.containsKey(key)) {
-                        subscribers.onPartial(key, concatenator.concat(null, data));
+                        subscribers.onPartial(key,
+                                PartialUpdate.from(concatenator.concat(null, partial.getData()))
+                                    .withIndices(partial.transpose(
+                                            left.getSchema().lastIndex()).getIndices()));
                     }
                 }
 
@@ -353,7 +360,9 @@ public class DataJoin<K extends Comparable<K>>
                     DidoData leftData = left.get(key);
                     if (leftData != null) {
                         subscribers.onPartial(key,
-                                concatenator.concat(leftData, null));
+                                PartialUpdate.from(concatenator.concat(leftData, null))
+                                        .withIndices(IndexSequence.fromSchema(right.getSchema())
+                                                .transpose(left.getSchema().lastIndex()).getIndices()));
                     }
                 }
             });

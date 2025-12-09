@@ -2,6 +2,8 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
+import dido.data.partial.IndexSequence;
+import dido.data.partial.PartialUpdate;
 import dido.flow.DidoSubscriber;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -26,8 +28,8 @@ class MethodOperationBuilderTest {
         }
 
         @Override
-        public void onPartial(DidoData partial) {
-            this.partial.add(partial);
+        public void onPartial(PartialUpdate partial) {
+            this.partial.add(partial.getData());
         }
 
         @Override
@@ -86,7 +88,8 @@ class MethodOperationBuilderTest {
         OurDidoSubscriber receiver = new OurDidoSubscriber();
 
         ArrayRowImpl row = new ArrayRowImpl(op.getFullSchema(), receiver);
-        row.load(DidoData.withSchema(schema).of(2, 2), op);
+        row.load(IndexSequence.fromSchema(schema),
+                DidoData.withSchema(schema).of(2, 2), op);
 
         assertThat(row.getValueNamed("c").get(), Matchers.is(4));
     }

@@ -2,6 +2,7 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
+import dido.data.partial.PartialUpdate;
 import dido.flow.QuietlyCloseable;
 import dido.flow.util.KeyExtractor;
 import dido.table.CloseableTable;
@@ -56,7 +57,7 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
             }
 
             @Override
-            public void onPartial(K2 key, DidoData partial) {
+            public void onPartial(K2 key, PartialUpdate partial) {
                 K1 left = table.mappingFrom.get(key);
                 table.subscribers.onPartial(left, partial);
             }

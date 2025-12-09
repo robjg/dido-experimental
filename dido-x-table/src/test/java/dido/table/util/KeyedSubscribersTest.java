@@ -1,6 +1,7 @@
 package dido.table.util;
 
 import dido.data.DidoData;
+import dido.data.partial.PartialUpdate;
 import dido.flow.QuietlyCloseable;
 import dido.table.KeyedSubscriber;
 import org.junit.jupiter.api.Test;
@@ -23,8 +24,8 @@ class KeyedSubscribersTest {
         }
 
         @Override
-        public void onPartial(Integer key, DidoData data) {
-            results.add("onPartial: " + key + "=" + data);
+        public void onPartial(Integer key, PartialUpdate partial) {
+            results.add("onPartial: " + key + "=" + partial.getData());
         }
 
         @Override
@@ -41,7 +42,7 @@ class KeyedSubscribersTest {
         KeyedDataSubscribers<Integer> test = new KeyedDataSubscribers<>(apple.getSchema());
 
         test.onData(1, apple);
-        test.onPartial(1, apple);
+        test.onPartial(1, PartialUpdate.from(apple).withIndices(1));
         test.onDelete(1, apple);
 
         OurSubscriber s1 = new OurSubscriber();
@@ -51,7 +52,7 @@ class KeyedSubscribersTest {
         DidoData orange = DidoData.of("Orange");
 
         test.onData(2, orange);
-        test.onPartial(2, orange);
+        test.onPartial(2, PartialUpdate.from(orange).withIndices(1));
         test.onDelete(2, orange);
 
         assertThat(s1.results, contains("onData: 2={[1:f_1]=Orange}", "onPartial: 2={[1:f_1]=Orange}", "onDelete: 2={[1:f_1]=Orange}"));

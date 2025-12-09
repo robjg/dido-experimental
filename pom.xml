@@ -8,6 +8,7 @@
     <artifactId>dido-experimental</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+
     <modules>
         <module>dido-x-operators</module>
         <module>dido-x-flow</module>
@@ -20,7 +21,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <dido.version>2.0.0-SNAPSHOT</dido.version>
+        <dido.version>2.1.0-SNAPSHOT</dido.version>
 
         <junit5.version>5.12.2</junit5.version>
         <hamcrest.version>3.0</hamcrest.version>

@@ -2,6 +2,7 @@ package dido.table;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
+import dido.data.partial.PartialUpdate;
 import dido.flow.DidoPublisher;
 import dido.flow.DidoSubscriber;
 import dido.flow.DidoSubscription;
@@ -33,7 +34,7 @@ public interface DataTable<K extends Comparable<K>> extends DidoPublisher {
             }
 
             @Override
-            public void onPartial(K key, DidoData data) {
+            public void onPartial(K key, PartialUpdate data) {
                 subscriber.onPartial(data);
             }
 

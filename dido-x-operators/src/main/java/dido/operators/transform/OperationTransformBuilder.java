@@ -150,16 +150,15 @@ public class OperationTransformBuilder {
         else {
             newSchema = schemaFactory.toSchema();
         }
-        WriteSchema outSchema = WriteSchema.from(newSchema);
-        setters.init(outSchema);
 
-        DataFactory factory = dataFactoryProvider.factoryFor(outSchema);
+        DataFactory factory = dataFactoryProvider.factoryFor(newSchema);
+        setters.init(factory.getSchema());
 
         return new DidoTransform() {
 
             @Override
             public DataSchema getResultantSchema() {
-                return outSchema;
+                return factory.getSchema();
             }
 
             @Override
