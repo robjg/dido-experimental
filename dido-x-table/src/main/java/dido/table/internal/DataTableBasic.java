@@ -137,6 +137,6 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Di
             throw new IllegalArgumentException("No row for key " + key);
         }
 
-        subscribers.onDelete(key, keyData);
+        subscribers.onDelete(key);
     }
 }

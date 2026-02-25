@@ -9,5 +9,5 @@ public interface KeyedSubscriber<K extends Comparable<K>> {
 
     void onPartial(K key, PartialUpdate data);
 
-    void onDelete(K key, DidoData data);
+    void onDelete(K key);
 }

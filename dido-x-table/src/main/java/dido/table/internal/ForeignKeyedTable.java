@@ -54,11 +54,11 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
         }
 
         @Override
-        public void onDelete(K2 key, DidoData data) {
+        public void onDelete(K2 key) {
             Set<K1> lefts = mappingFrom.get(key);
             if (lefts != null) {
                 for (K1 left : lefts) {
-                    subscribers.onDelete(left, data);
+                    subscribers.onDelete(left);
                 }
             }
         }
@@ -83,7 +83,7 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
             }
 
             @Override
-            public void onDelete(K1 key, DidoData data) {
+            public void onDelete(K1 key) {
                 K2 other = table.mappingTo.remove(key);
                 Set<K1> set = table.mappingFrom.get(other);
                 set.remove(key);

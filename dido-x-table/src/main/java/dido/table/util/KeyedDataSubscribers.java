@@ -64,9 +64,9 @@ public class KeyedDataSubscribers<K extends Comparable<K>> implements KeyedSubsc
     }
 
     @Override
-    public void onDelete(K key, DidoData data) {
+    public void onDelete(K key) {
         if (existing != null) {
-            existing.onDelete(key, data);
+            existing.onDelete(key);
         }
     }
 
@@ -96,8 +96,8 @@ public class KeyedDataSubscribers<K extends Comparable<K>> implements KeyedSubsc
         }
 
         @Override
-        public void onDelete(K key, DidoData data) {
-            consumers.forEach(c -> c.onDelete(key, data));
+        public void onDelete(K key) {
+            consumers.forEach(c -> c.onDelete(key));
         }
     }
 }

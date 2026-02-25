@@ -63,12 +63,12 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
             }
 
             @Override
-            public void onDelete(K2 other, DidoData data) {
+            public void onDelete(K2 other) {
                 K1 left = table.mappingFrom.remove(other);
                 Set<K2> others = table.otherMappings.get(left);
                 if (others == null) {
                     table.mappingTo.remove(left);
-                    table.subscribers.onDelete(left, data);
+                    table.subscribers.onDelete(left);
                 }
                 else {
                     K2 next = others.iterator().next();

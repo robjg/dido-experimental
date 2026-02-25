@@ -31,8 +31,8 @@ class DataTableBasicTest {
         }
 
         @Override
-        public void onDelete(Integer key, DidoData data) {
-            results.add("onDelete: " + key+ ", " + data);
+        public void onDelete(Integer key) {
+            results.add("onDelete: " + key);
         }
     }
 
@@ -108,7 +108,7 @@ class DataTableBasicTest {
 
         test.onDelete(DidoData.withSchema(SubSchema.from(schema).withIndices(1)).of(3));
 
-        assertThat(recorder.results, contains("onDelete: 3, {[1:Id]=3}"));
+        assertThat(recorder.results, contains("onDelete: 3"));
         recorder.results.clear();
 
         close.close();

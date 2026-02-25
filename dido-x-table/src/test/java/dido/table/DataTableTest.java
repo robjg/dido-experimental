@@ -4,8 +4,6 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialUpdate;
 import dido.data.schema.SubSchema;
-import dido.flow.DidoSubscriber;
-import dido.flow.DidoSubscription;
 import dido.table.internal.DataTableBasic;
 import org.junit.jupiter.api.Test;
 
@@ -18,23 +16,23 @@ import static org.hamcrest.Matchers.is;
 
 class DataTableTest {
 
-    static class Recorder implements DidoSubscriber {
+    static class Recorder implements KeyedSubscriber<Integer> {
 
         List<String> results = new ArrayList<>();
 
         @Override
-        public void onData(DidoData data) {
+        public void onData(Integer key, DidoData data) {
             results.add("onData: " + data);
         }
 
         @Override
-        public void onPartial(PartialUpdate partial) {
+        public void onPartial(Integer key, PartialUpdate partial) {
             results.add("onPartial: " + partial);
         }
 
         @Override
-        public void onDelete(DidoData data) {
-            results.add("onDelete: " + data);
+        public void onDelete(Integer key) {
+            results.add("onDelete: " + key);
         }
     }
 
@@ -52,7 +50,7 @@ class DataTableTest {
 
         Recorder recorder = new Recorder();
 
-        DidoSubscription subscription = test.didoSubscribe(recorder);
+        KeyedSubscription subscription = test.tableSubscribe(recorder);
 
         assertThat(subscription.getSchema(), is(schema));
 
@@ -73,7 +71,7 @@ class DataTableTest {
         test.onDelete(DidoData.withSchema(SubSchema.from(schema).withIndices(1))
                 .of(1));
 
-        assertThat(recorder.results, contains("onDelete: {[1:Id]=1}"));
+        assertThat(recorder.results, contains("onDelete: 1"));
         recorder.results.clear();
 
         subscription.close();

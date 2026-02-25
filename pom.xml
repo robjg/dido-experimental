@@ -14,6 +14,7 @@
         <module>dido-x-flow</module>
         <module>dido-x-data</module>
         <module>dido-x-table</module>
+        <module>dido-x-ema</module>
     </modules>
 
     <properties>

@@ -29,8 +29,8 @@ class KeyedSubscribersTest {
         }
 
         @Override
-        public void onDelete(Integer key, DidoData data) {
-            results.add("onDelete: " + key + "=" + data);
+        public void onDelete(Integer key) {
+            results.add("onDelete: " + key);
         }
     }
 
@@ -43,7 +43,7 @@ class KeyedSubscribersTest {
 
         test.onData(1, apple);
         test.onPartial(1, PartialUpdate.from(apple).withIndices(1));
-        test.onDelete(1, apple);
+        test.onDelete(1);
 
         OurSubscriber s1 = new OurSubscriber();
 
@@ -53,9 +53,9 @@ class KeyedSubscribersTest {
 
         test.onData(2, orange);
         test.onPartial(2, PartialUpdate.from(orange).withIndices(1));
-        test.onDelete(2, orange);
+        test.onDelete(2);
 
-        assertThat(s1.results, contains("onData: 2={[1:f_1]=Orange}", "onPartial: 2={[1:f_1]=Orange}", "onDelete: 2={[1:f_1]=Orange}"));
+        assertThat(s1.results, contains("onData: 2={[1:f_1]=Orange}", "onPartial: 2={[1:f_1]=Orange}", "onDelete: 2"));
 
         s1.results.clear();
 

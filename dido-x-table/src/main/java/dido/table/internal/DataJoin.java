@@ -229,11 +229,10 @@ public class DataJoin<K extends Comparable<K>>
                 }
 
                 @Override
-                public void onDelete(K key, DidoData data) {
+                public void onDelete(K key) {
                     DidoData rightData = right.get(key);
                     if (rightData != null) {
-                        subscribers.onDelete(key,
-                                concatenator.concat(data, rightData));
+                        subscribers.onDelete(key);
                     }
                 }
             });
@@ -254,11 +253,10 @@ public class DataJoin<K extends Comparable<K>>
                 }
 
                 @Override
-                public void onDelete(K key, DidoData data) {
+                public void onDelete(K key) {
                     DidoData leftData = left.get(key);
                     if (leftData != null) {
-                        subscribers.onDelete(key,
-                                concatenator.concat(leftData, data));
+                        subscribers.onDelete(key);
                     }
                 }
             });
@@ -324,15 +322,13 @@ public class DataJoin<K extends Comparable<K>>
                 }
 
                 @Override
-                public void onDelete(K key, DidoData data) {
+                public void onDelete(K key) {
                     DidoData rightData = right.get(key);
                     if (rightData == null) {
-                        subscribers.onDelete(key,
-                                concatenator.concat(data, null));
+                        subscribers.onDelete(key);
                     }
                     else {
-                        subscribers.onDelete(key,
-                                concatenator.concat(data, rightData));
+                        subscribers.onDelete(key);
                     }
                 }
             });
@@ -356,7 +352,7 @@ public class DataJoin<K extends Comparable<K>>
                 }
 
                 @Override
-                public void onDelete(K key, DidoData data) {
+                public void onDelete(K key) {
                     DidoData leftData = left.get(key);
                     if (leftData != null) {
                         subscribers.onPartial(key,
