@@ -11,27 +11,16 @@
 
     <artifactId>dido-x-ema</artifactId>
 
-    <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <oddjob.version>1.8.0-SNAPSHOT</oddjob.version>
-        <slf4j.version>2.0.17</slf4j.version>
-        <logback.version>1.5.31</logback.version>
-    </properties>
-
     <dependencies>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
 
         <dependency>
             <groupId>uk.co.rgordon</groupId>
-            <artifactId>dido-x-flow</artifactId>
+            <artifactId>dido-x-table</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -56,14 +45,12 @@
         <dependency>
             <groupId>uk.co.rgordon</groupId>
             <artifactId>oddjob</artifactId>
-            <version>${oddjob.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
 
