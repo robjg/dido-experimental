@@ -33,6 +33,7 @@ public class SwaggerAssumptionsTest {
         assertThat(componentSchemas.keySet(), Matchers.contains("Pet", "Pets", "Error"));
 
         Schema petSchema = componentSchemas.get("Pet");
+        assertThat(petSchema.getName(), nullValue());
 
         Map<String, Schema> petSchemaProperties = petSchema.getProperties();
 
