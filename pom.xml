@@ -16,6 +16,7 @@
         <module>dido-x-table</module>
         <module>dido-x-ema</module>
         <module>dido-x-swagger</module>
+        <module>dido-x-vertx</module>
     </modules>
 
     <properties>
@@ -48,6 +49,12 @@
             <dependency>
                 <groupId>uk.co.rgordon</groupId>
                 <artifactId>dido-data</artifactId>
+                <version>${dido.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>uk.co.rgordon</groupId>
+                <artifactId>dido-how</artifactId>
                 <version>${dido.version}</version>
             </dependency>
 
