@@ -19,6 +19,8 @@ public class HttpServerService {
 
     private volatile Runnable close;
 
+    private int port;
+
     public void start() {
 
         List<Runnable> closes = new ArrayList<>();
@@ -43,9 +45,12 @@ public class HttpServerService {
 
         }
 
-        HttpServer httpServer = vertx.createHttpServer();
+        HttpServer httpServer = vertx.createHttpServer()
+                .requestHandler(router);
 
-        httpServer.requestHandler(router);
+        httpServer.listen(this.port);
+
+        this.port = httpServer.actualPort();
 
         closes.add(httpServer::close);
 
@@ -74,6 +79,14 @@ public class HttpServerService {
 
     public void setVertx(Vertx vertx) {
         this.vertx = vertx;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
     }
 
     public void setEndpoints(String path, DidoOutEndpoint endpoint) {

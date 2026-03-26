@@ -1,0 +1,13 @@
+<arooa:descriptor xmlns:arooa="http://rgordon.co.uk/oddjob/arooa"
+                  prefix="vertx" namespace="oddjob:vertx">
+    <components>
+        <arooa:bean-def element='service'
+                        className='dido.vertx.VertxService'/>
+        <arooa:bean-def element="http-server"
+                        className="dido.vertx.HttpServerService"/>
+    </components>
+    <values>
+        <arooa:bean-def element="dido-out"
+                        className="dido.vertx.DidoOutEndpoint"/>
+    </values>
+</arooa:descriptor>

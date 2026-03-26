@@ -59,6 +59,24 @@
         </dependency>
 
         <dependency>
+            <groupId>uk.co.rgordon</groupId>
+            <artifactId>dido-csv</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>uk.co.rgordon</groupId>
+            <artifactId>dido-json</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>uk.co.rgordon</groupId>
+            <artifactId>dido-oddball</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <scope>test</scope>
@@ -77,5 +95,43 @@
         </dependency>
 
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>examples</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>oddjob-explorer-example1</id>
+                                <configuration>
+                                    <includeProjectDependencies>true</includeProjectDependencies>
+                                    <includePluginDependencies>false</includePluginDependencies>
+                                    <classpathScope>test</classpathScope>
+                                    <executable>java</executable>
+                                    <arguments>
+                                        <argument>-classpath</argument>
+                                        <classpath/>
+                                        <argument>org.oddjob.Main</argument>
+                                        <argument>-f</argument>
+                                        <argument>oddjob/oddjob.xml</argument>
+                                        <argument>-l</argument>
+                                        <argument>oddjob/logback-oddjob.xml</argument>
+                                        <argument>src/test/resources/examples/DidoHttpServer.xml</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

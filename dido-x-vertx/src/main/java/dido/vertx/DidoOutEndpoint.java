@@ -13,13 +13,13 @@ public class DidoOutEndpoint implements Supplier<Buffer> {
 
     private static final int DEFAULT_BUFFER_SIZE = 256;
 
+    private Iterable<DidoData> data;
+
     private DataOutHow<OutputStream> how;
 
     private String mediaType;
 
     private int bufferSize;
-
-    private Iterable<DidoData> data;
 
     @Override
     public Buffer get() {
@@ -33,6 +33,14 @@ public class DidoOutEndpoint implements Supplier<Buffer> {
         }
 
         return Buffer.buffer(out.toByteArray());
+    }
+
+    public Iterable<DidoData> getData() {
+        return data;
+    }
+
+    public void setData(Iterable<DidoData> data) {
+        this.data = data;
     }
 
     public DataOutHow<OutputStream> getHow() {
@@ -58,4 +66,5 @@ public class DidoOutEndpoint implements Supplier<Buffer> {
     public void setMediaType(String mediaType) {
         this.mediaType = mediaType;
     }
+
 }

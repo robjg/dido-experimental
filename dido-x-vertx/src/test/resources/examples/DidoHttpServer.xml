@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<oddjob>
+    <job>
+        <sequential>
+            <jobs>
+                <variables id="ourVars">
+                    <ourSchema>
+                        <dido:schema xmlns:dido="oddjob:dido">
+                            <of>
+                                <dido:field name="Fruit" type="java.lang.String"/>
+                                <dido:field name="Qty" type="int"/>
+                                <dido:field name="Price" type="double"/>
+                            </of>
+                        </dido:schema>
+                    </ourSchema>
+                </variables>
+                <bus:bus xmlns:bus="oddjob:beanbus">
+                    <of>
+                        <dido:data-in xmlns:dido="oddjob:dido">
+                            <how>
+                                <dido:csv>
+                                    <schema>
+                                        <value value="${ourVars.ourSchema}"/>
+                                    </schema>
+                                </dido:csv>
+                            </how>
+                            <from>
+                                <buffer><![CDATA[Apple,5,19.50
+Orange,2,35.24
+Pear,3,26.84
+]]></buffer>
+                            </from>
+                        </dido:data-in>
+                        <bus:collect id="data"/>
+                    </of>
+                </bus:bus>
+                <vertx:http-server xmlns:vertx="oddjob:vertx">
+                    <endpoints>
+                        <is key="/data" mediaType="application/json">
+                            <how>
+                                <dido:json xmlns:dido="oddjob:dido"/>
+                            </how>
+                            <data>
+                                <value value="${data.list}"/>
+                            </data>
+                        </is>
+                    </endpoints>
+                </vertx:http-server>
+            </jobs>
+        </sequential>
+    </job>
+</oddjob>
