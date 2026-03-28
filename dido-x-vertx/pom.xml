@@ -47,6 +47,17 @@
         </dependency>
 
         <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web-client</artifactId>
+            <version>${vertx.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-launcher</artifactId>
             <scope>test</scope>
@@ -123,7 +134,7 @@
                                         <argument>oddjob/oddjob.xml</argument>
                                         <argument>-l</argument>
                                         <argument>oddjob/logback-oddjob.xml</argument>
-                                        <argument>src/test/resources/examples/DidoHttpServer.xml</argument>
+                                        <argument>src/test/resources/examples/HttpDidoServerExample.xml</argument>
                                     </arguments>
                                 </configuration>
                             </execution>

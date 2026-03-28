@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<oddjob>
+    <job>
+        <sequential>
+            <jobs>
+                <properties>
+                    <values>
+                        <value key="example.server.port" value="8080"/>
+                        <value key="example.server.host" value="localhost"/>
+                    </values>
+                </properties>
+                <variables id="ourVars">
+                    <ourSchema>
+                        <dido:schema xmlns:dido="oddjob:dido">
+                            <of>
+                                <dido:field name="Fruit" type="java.lang.String"/>
+                                <dido:field name="Qty" type="int"/>
+                                <dido:field name="Price" type="double"/>
+                            </of>
+                        </dido:schema>
+                    </ourSchema>
+                </variables>
+                <bus:bus xmlns:bus="oddjob:beanbus">
+                    <of>
+                        <vertx:http-client xmlns:vertx="oddjob:vertx">
+                            <url>
+                                <value value="http://${example.server.host}:${example.server.port}/data"/>
+                            </url>
+                            <dataInHow>
+                                <dido:json xmlns:dido="oddjob:dido">
+                                    <schema>
+                                        <value value="${ourVars.ourSchema}"/>
+                                    </schema>
+                                </dido:json>
+                            </dataInHow>
+                        </vertx:http-client>
+                        <bus:collect id="data"/>
+                    </of>
+                </bus:bus>
+            </jobs>
+        </sequential>
+    </job>
+</oddjob>

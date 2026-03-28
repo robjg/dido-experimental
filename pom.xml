@@ -20,12 +20,15 @@
     </modules>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <dido.version>2.1.0-SNAPSHOT</dido.version>
         <oddjob.version>1.8.0-SNAPSHOT</oddjob.version>
+
+        <javax.inject.version>1</javax.inject.version>
 
         <slf4j.version>2.0.17</slf4j.version>
         <logback.version>1.5.31</logback.version>
@@ -80,6 +83,12 @@
                 <groupId>uk.co.rgordon</groupId>
                 <artifactId>dido-operators</artifactId>
                 <version>${dido.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.inject</groupId>
+                <artifactId>javax.inject</artifactId>
+                <version>${javax.inject.version}</version>
             </dependency>
 
             <dependency>

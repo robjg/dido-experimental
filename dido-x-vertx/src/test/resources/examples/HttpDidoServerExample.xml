@@ -3,6 +3,11 @@
     <job>
         <sequential>
             <jobs>
+                <properties>
+                    <values>
+                        <value key="example.server.port" value="8080"/>
+                    </values>
+                </properties>
                 <variables id="ourVars">
                     <ourSchema>
                         <dido:schema xmlns:dido="oddjob:dido">
@@ -34,7 +39,7 @@ Pear,3,26.84
                         <bus:collect id="data"/>
                     </of>
                 </bus:bus>
-                <vertx:http-server xmlns:vertx="oddjob:vertx">
+                <vertx:http-server id="server" xmlns:vertx="oddjob:vertx" port="${example.server.port}">
                     <endpoints>
                         <is key="/data" mediaType="application/json">
                             <how>

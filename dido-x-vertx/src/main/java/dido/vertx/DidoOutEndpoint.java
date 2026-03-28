@@ -9,6 +9,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.util.function.Supplier;
 
+/**
+ * @oddjob.description Provides Dido Data to Vertx. Any type of Dido format that can
+ * provide an {@code OutputStream} can be used.
+ */
 public class DidoOutEndpoint implements Supplier<Buffer> {
 
     private static final int DEFAULT_BUFFER_SIZE = 256;

@@ -4,7 +4,21 @@
         <arooa:bean-def element='service'
                         className='dido.vertx.VertxService'/>
         <arooa:bean-def element="http-server"
-                        className="dido.vertx.HttpServerService"/>
+                        className="dido.vertx.HttpDidoServerService">
+            <annotations>
+                <arooa:annotation name="org.oddjob.framework.adapt.Start" method="start"/>
+                <arooa:annotation name="org.oddjob.framework.adapt.Stop" method="stop"/>
+            </annotations>
+        </arooa:bean-def>
+        <arooa:bean-def element="http-client"
+                        className="dido.vertx.HttpDidoClientJob">
+            <properties>
+                <arooa:property annotation="org.oddjob.beanbus.Destination" name="to"/>
+            </properties>
+            <annotations>
+                <arooa:annotation name="org.oddjob.framework.adapt.Stop" method="stop"/>
+            </annotations>
+        </arooa:bean-def>
     </components>
     <values>
         <arooa:bean-def element="dido-out"

@@ -3,13 +3,21 @@ package dido.vertx;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
-public class HttpServerService {
+/**
+ * @oddjob.description An HTTP Server for publishing {@link DidoOutEndpoint}s.
+ */
+public class HttpDidoServerService {
+
+    private static final Logger logger = LoggerFactory.getLogger(HttpDidoServerService.class);
 
     private String name;
 
@@ -21,40 +29,59 @@ public class HttpServerService {
 
     private int port;
 
-    public void start() {
+    public CompletableFuture<Integer> start() {
 
         List<Runnable> closes = new ArrayList<>();
 
         if (vertx == null) {
             vertx = Vertx.vertx();
-            closes.add(vertx::close);
+            closes.add(() -> {
+                vertx.close();
+                vertx = null;
+            });
         }
 
         Router router = Router.router(vertx);
 
         for (Map.Entry<String, DidoOutEndpoint> entry : endpoints.entrySet()) {
-            String path =  entry.getKey();
+            String path = entry.getKey();
             DidoOutEndpoint endpoint = entry.getValue();
-            String mediaType = endpoint.getMediaType() == null ? "application/octet-stream" :  endpoint.getMediaType();
+            String mediaType = endpoint.getMediaType() == null ? "application/octet-stream" : endpoint.getMediaType();
+
+            logger.info("Adding endpoint at {} for media type {}", path, mediaType);
 
             router.route(path)
                     .respond(routingContext ->
                             routingContext.response()
-                            .putHeader("content-type", mediaType)
-                            .end(endpoint.get()));
-
+                                    .putHeader("content-type", mediaType)
+                                    .end(endpoint.get()));
         }
 
         HttpServer httpServer = vertx.createHttpServer()
                 .requestHandler(router);
 
-        httpServer.listen(this.port);
+        CompletableFuture<Integer> future = new CompletableFuture<>();
 
-        this.port = httpServer.actualPort();
+        httpServer.listen(this.port)
+                .onComplete(server -> {
+                    this.port = httpServer.actualPort();
+                    logger.info("Http Server stated on port {}", this.port);
+                    future.complete(0);
+                })
+                .onFailure(err -> {
+                            logger.error("Failed to start", err);
+                            future.completeExceptionally(err);
+                        }
+                );
 
-        closes.add(httpServer::close);
+        closes.add(() -> {
+            httpServer.close();
+            logger.info("Http Server closed.");
+        });
 
         this.close = () -> closes.forEach(Runnable::run);
+
+        return future;
     }
 
     public void stop() {
@@ -92,8 +119,7 @@ public class HttpServerService {
     public void setEndpoints(String path, DidoOutEndpoint endpoint) {
         if (endpoint == null) {
             endpoints.remove(path);
-        }
-        else {
+        } else {
             endpoints.put(path, endpoint);
         }
     }
