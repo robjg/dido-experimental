@@ -2,18 +2,19 @@ package dido.vertx;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.web.Router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * @oddjob.description An HTTP Server for publishing {@link DidoOutEndpoint}s.
+ *
+ * @oddjob.example A simple server that exposes Dido Data as a REST endpoint.
+ * {@oddjob.xml.resource examples/HttpDidoServerExample.xml}
  */
 public class HttpDidoServerService {
 
@@ -22,6 +23,8 @@ public class HttpDidoServerService {
     private String name;
 
     private final Map<String, DidoOutEndpoint> endpoints = new HashMap<>();
+
+    private ServerOptionsModifier sslOptions; ;
 
     private Vertx vertx;
 
@@ -57,15 +60,24 @@ public class HttpDidoServerService {
                                     .end(endpoint.get()));
         }
 
-        HttpServer httpServer = vertx.createHttpServer()
-                .requestHandler(router);
+        HttpServerOptions serverOptions = new HttpServerOptions();
+        Optional.ofNullable(this.sslOptions)
+                .ifPresent(options -> options.modify(serverOptions, vertx));
 
         CompletableFuture<Integer> future = new CompletableFuture<>();
 
-        httpServer.listen(this.port)
+        vertx.createHttpServer(serverOptions)
+                .requestHandler(router)
+                .listen(this.port)
                 .onComplete(server -> {
+                    HttpServer httpServer = server.result();
                     this.port = httpServer.actualPort();
                     logger.info("Http Server stated on port {}", this.port);
+                    closes.add(() -> {
+                        httpServer.close();
+                        logger.info("Http Server closed.");
+                    });
+
                     future.complete(0);
                 })
                 .onFailure(err -> {
@@ -73,11 +85,6 @@ public class HttpDidoServerService {
                             future.completeExceptionally(err);
                         }
                 );
-
-        closes.add(() -> {
-            httpServer.close();
-            logger.info("Http Server closed.");
-        });
 
         this.close = () -> closes.forEach(Runnable::run);
 
@@ -98,6 +105,14 @@ public class HttpDidoServerService {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public ServerOptionsModifier getSslOptions() {
+        return sslOptions;
+    }
+
+    public void setSslOptions(ServerOptionsModifier sslOptions) {
+        this.sslOptions = sslOptions;
     }
 
     public Vertx getVertx() {

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<oddjob id="oddjob">
+    <job>
+        <cascade>
+            <jobs>
+                <properties>
+                    <values>
+                        <value key="work.dir" value="${oddjob.dir}"/>
+                        <file file="${work.dir}/stores" key="ssltest.stores.dir"/>
+                        <value key="ssltest.hostname" value="#{java.net.InetAddress.getLocalHost().getHostName()}"/>
+                        <value key="example.server.port" value="8080"/>
+                    </values>
+                </properties>
+                <variables id="ourVars">
+                    <ourSchema>
+                        <dido:schema xmlns:dido="oddjob:dido">
+                            <of>
+                                <dido:field name="Fruit" type="java.lang.String"/>
+                                <dido:field name="Qty" type="int"/>
+                                <dido:field name="Price" type="double"/>
+                            </of>
+                        </dido:schema>
+                    </ourSchema>
+                </variables>
+                <bus:bus xmlns:bus="oddjob:beanbus">
+                    <of>
+                        <vertx:http-client xmlns:vertx="oddjob:vertx">
+                            <url>
+                                <value value="https://${ssltest.hostname}:${example.server.port}/data"/>
+                            </url>
+                            <dataInHow>
+                                <dido:json xmlns:dido="oddjob:dido">
+                                    <schema>
+                                        <value value="${ourVars.ourSchema}"/>
+                                    </schema>
+                                </dido:json>
+                            </dataInHow>
+                            <sslOptions>
+                                <vertx:ssl-configuration keyStorePassword="clistorepwd" keyStorePath="${ssltest.stores.dir}/client_keystore.p12" keyStoreType="PKCS12" trustStorePassword="clitrustpwd" trustStorePath="${ssltest.stores.dir}/client_trustore.p12" trustStoreType="PKCS12"/>
+                            </sslOptions>
+                        </vertx:http-client>
+                        <bus:collect id="data"/>
+                    </of>
+                </bus:bus>
+            </jobs>
+        </cascade>
+    </job>
+</oddjob>

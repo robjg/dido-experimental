@@ -23,5 +23,12 @@
     <values>
         <arooa:bean-def element="dido-out"
                         className="dido.vertx.DidoOutEndpoint"/>
+        <arooa:bean-def element="ssl-configuration"
+                        className="dido.vertx.SslConfiguration">
+            <properties>
+                <arooa:property type="ATTRIBUTE" name="keyStorePath"/>
+                <arooa:property type="ATTRIBUTE" name="trustStorePath"/>
+            </properties>
+        </arooa:bean-def>
     </values>
 </arooa:descriptor>

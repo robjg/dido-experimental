@@ -4,6 +4,7 @@ import dido.data.DidoData;
 import dido.how.DataInHow;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +23,9 @@ import java.util.function.Consumer;
 
 /**
  * @oddjob.description An HTTP Client for reading Dido Data.
+ *
+ * @oddjob.example A simple client that consumes a REST endpoint as Dido Data.
+ * {@oddjob.xml.resource examples/HttpDidoClientExample.xml}
  */
 public class HttpDidoClientJob implements Callable<CompletableFuture<Integer>> {
 
@@ -36,6 +40,8 @@ public class HttpDidoClientJob implements Callable<CompletableFuture<Integer>> {
     private DataInHow<InputStream> dataInHow;
 
     private Consumer<? super DidoData> to;
+
+    private ClientOptionsModifier sslOptions;
 
     private Executor executor;
 
@@ -58,7 +64,12 @@ public class HttpDidoClientJob implements Callable<CompletableFuture<Integer>> {
             });
         }
 
-        WebClient client = WebClient.create(vertx);
+        WebClientOptions options = new WebClientOptions();
+
+        Optional.ofNullable(this.sslOptions)
+                .ifPresent(sslOptions -> sslOptions.modify(options, vertx));
+
+        WebClient client = WebClient.create(vertx, options);
 
         CompletableFuture<Integer> future = new CompletableFuture<>();
 
@@ -131,6 +142,14 @@ public class HttpDidoClientJob implements Callable<CompletableFuture<Integer>> {
 
     public void setTo(Consumer<? super DidoData> to) {
         this.to = to;
+    }
+
+    public ClientOptionsModifier getSslOptions() {
+        return sslOptions;
+    }
+
+    public void setSslOptions(ClientOptionsModifier sslOptions) {
+        this.sslOptions = sslOptions;
     }
 
     @Inject

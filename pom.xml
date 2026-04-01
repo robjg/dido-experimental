@@ -29,6 +29,7 @@
         <oddjob.version>1.8.0-SNAPSHOT</oddjob.version>
 
         <javax.inject.version>1</javax.inject.version>
+        <nashorn.version>15.7</nashorn.version>
 
         <slf4j.version>2.0.17</slf4j.version>
         <logback.version>1.5.31</logback.version>
@@ -89,6 +90,12 @@
                 <groupId>javax.inject</groupId>
                 <artifactId>javax.inject</artifactId>
                 <version>${javax.inject.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.openjdk.nashorn</groupId>
+                <artifactId>nashorn-core</artifactId>
+                <version>${nashorn.version}</version>
             </dependency>
 
             <dependency>

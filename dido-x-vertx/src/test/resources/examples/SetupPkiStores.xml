@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<oddjob id="oddjob">
+    <job>
+        <sequential>
+            <jobs>
+                <properties>
+                    <values>
+                        <value key="work.dir" value="${oddjob.dir}"/>
+                        <value key="ssltest.hostname" value="#{java.net.InetAddress.getLocalHost().getHostName()}"/>
+                        <file file="${work.dir}/stores" key="ssltest.stores.dir"/>
+                    </values>
+                </properties>
+                <sequential name="Setup Keys and Certs">
+                    <jobs>
+                        <delete force="true" name="Delete Any Previous Store Directory">
+                            <files>
+                                <file file="${ssltest.stores.dir}"/>
+                            </files>
+                        </delete>
+                        <mkdir dir="${ssltest.stores.dir}" name="Create Store Directory"/>
+                        <exec dir="${ssltest.stores.dir}" name="Create Server Keystore"><![CDATA[keytool -v -genkey -keyalg RSA -keysize 2048 -validity 360 -alias serverkey -keystore server_keystore.p12 -storetype pkcs12 -storepass srvstorepwd -dname "CN=${ssltest.hostname}"]]></exec>
+                        <exec dir="${ssltest.stores.dir}" name="Export Server Certificate">
+                            <stdout>
+                                <file file="${ssltest.stores.dir}/server_cert.pem"/>
+                            </stdout><![CDATA[keytool -export -rfc -alias serverkey -keystore server_keystore.p12 -storepass srvstorepwd]]></exec>
+                        <exec dir="${ssltest.stores.dir}" name="Import Server Certificate into Client Trustore">
+                            <stdin>
+                                <file file="${ssltest.stores.dir}/server_cert.pem"/>
+                            </stdin><![CDATA[keytool -v -import -storetype pkcs12 -keystore client_trustore.p12 -storepass clitrustpwd -alias serverkey -noprompt]]></exec>
+                        <exec dir="${ssltest.stores.dir}" name="Create Client Keystore"><![CDATA[keytool -v -genkey -keyalg RSA -keysize 2048 -validity 360 -alias clientkey -keystore client_keystore.p12 -storetype pkcs12 -storepass clistorepwd -dname "CN=anything"]]></exec>
+                        <exec dir="${ssltest.stores.dir}" name="Export Client Certificate">
+                            <stdout>
+                                <file file="${ssltest.stores.dir}/client_cert.pem"/>
+                            </stdout><![CDATA[keytool -export -rfc -alias clientkey -keystore client_keystore.p12 -storepass clistorepwd]]></exec>
+                        <exec dir="${ssltest.stores.dir}" name="Import Server Certificate into Client Trustore">
+                            <stdin>
+                                <file file="${ssltest.stores.dir}/client_cert.pem"/>
+                            </stdin><![CDATA[keytool -v -import -storetype pkcs12 -keystore server_trustore.p12 -storepass srvtrustpwd -alias clientkey -noprompt]]></exec>
+                    </jobs>
+                </sequential>
+            </jobs>
+        </sequential>
+    </job>
+</oddjob>
