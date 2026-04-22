@@ -1,0 +1,24 @@
+<oddjob id="oddjob">
+    <job>
+        <bus:bus xmlns:bus="oddjob:beanbus">
+            <of>
+                <dido:data-in xmlns:dido="oddjob:dido">
+                    <how>
+                        <dido:csv>
+                            <schema>
+                                <import file="${oddjob.dir}/FruitSchema.xml"/>
+                            </schema>
+                        </dido:csv>
+                    </how>
+                    <from>
+                        <buffer><![CDATA[Apple,5,19.50
+Orange,2,35.24
+Pear,3,26.84
+]]></buffer>
+                    </from>
+                </dido:data-in>
+                <bus:collect id="data"/>
+            </of>
+        </bus:bus>
+    </job>
+</oddjob>

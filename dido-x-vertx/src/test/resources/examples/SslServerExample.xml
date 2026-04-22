@@ -11,56 +11,26 @@
                         <value key="example.server.port" value="8080"/>
                     </values>
                 </properties>
-                <sequential>
-                    <jobs>
-                        <variables id="ourVars">
-                            <ourSchema>
-                                <dido:schema xmlns:dido="oddjob:dido">
-                                    <of>
-                                        <dido:field name="Fruit" type="java.lang.String"/>
-                                        <dido:field name="Qty" type="int"/>
-                                        <dido:field name="Price" type="double"/>
-                                    </of>
-                                </dido:schema>
-                            </ourSchema>
-                        </variables>
-                        <bus:bus xmlns:bus="oddjob:beanbus">
-                            <of>
-                                <dido:data-in xmlns:dido="oddjob:dido">
-                                    <how>
-                                        <dido:csv>
-                                            <schema>
-                                                <value value="${ourVars.ourSchema}"/>
-                                            </schema>
-                                        </dido:csv>
-                                    </how>
-                                    <from>
-                                        <buffer><![CDATA[Apple,5,19.50
-Orange,2,35.24
-Pear,3,26.84
-]]></buffer>
-                                    </from>
-                                </dido:data-in>
-                                <bus:collect id="data"/>
-                            </of>
-                        </bus:bus>
-                        <vertx:http-server id="server" xmlns:vertx="oddjob:vertx" port="${example.server.port}">
-                            <endpoints>
-                                <is key="/data" mediaType="application/json">
-                                    <how>
-                                        <dido:json xmlns:dido="oddjob:dido"/>
-                                    </how>
-                                    <data>
-                                        <value value="${data.list}"/>
-                                    </data>
-                                </is>
-                            </endpoints>
-                            <sslOptions>
-                                <vertx:ssl-configuration clientAuth="REQUIRED" keyStorePassword="srvstorepwd" keyStorePath="${ssltest.stores.dir}/server_keystore.p12" keyStoreType="PKCS12" trustStorePassword="srvtrustpwd" trustStorePath="${ssltest.stores.dir}/server_trustore.p12" trustStoreType="PKCS12"/>
-                            </sslOptions>
-                        </vertx:http-server>
-                    </jobs>
-                </sequential>
+                <oddjob id="dido" file="${oddjob.dir}/CsvDidoPipe.xml"/>
+                <vertx:http-server id="server" xmlns:vertx="oddjob:vertx" port="${example.server.port}">
+                    <endpoints>
+                        <vertx:dido-out key="/data" mediaType="application/json">
+                            <how>
+                                <dido:json xmlns:dido="oddjob:dido"/>
+                            </how>
+                            <data>
+                                <value value="${dido/data.list}"/>
+                            </data>
+                        </vertx:dido-out>
+                    </endpoints>
+                    <sslOptions>
+                        <vertx:ssl-configuration clientAuth="REQUIRED" keyStorePassword="srvstorepwd"
+                                                 keyStorePath="${ssltest.stores.dir}/server_keystore.p12"
+                                                 keyStoreType="PKCS12" trustStorePassword="srvtrustpwd"
+                                                 trustStorePath="${ssltest.stores.dir}/server_trustore.p12"
+                                                 trustStoreType="PKCS12"/>
+                    </sslOptions>
+                </vertx:http-server>
             </jobs>
         </cascade>
     </job>

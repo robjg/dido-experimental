@@ -1,0 +1,7 @@
+<dido:schema xmlns:dido="oddjob:dido">
+    <of>
+        <dido:field name="Fruit" type="java.lang.String"/>
+        <dido:field name="Qty" type="int"/>
+        <dido:field name="Price" type="double"/>
+    </of>
+</dido:schema>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<oddjob id="oddjob">
+    <job>
+        <cascade>
+            <jobs>
+                <properties>
+                    <values>
+                        <value key="work.dir" value="${oddjob.dir}"/>
+                        <value key="ssltest.hostname" value="#{java.net.InetAddress.getLocalHost().getHostName()}"/>
+                        <file file="${work.dir}/stores" key="ssltest.stores.dir"/>
+                        <value key="example.server.port" value="8080"/>
+                    </values>
+                </properties>
+                <oddjob file="${oddjob.dir}/CsvDidoPipe.xml" id="dido"/>
+                <vertx:http-server id="server" port="${example.server.port}" xmlns:vertx="oddjob:vertx">
+                    <sslOptions>
+                        <vertx:ssl-configuration clientAuth="REQUEST" keyStorePassword="srvstorepwd" keyStorePath="${ssltest.stores.dir}/server_keystore.p12" keyStoreType="PKCS12" trustStorePassword="srvtrustpwd" trustStorePath="${ssltest.stores.dir}/server_trustore.p12" trustStoreType="PKCS12"/>
+                    </sslOptions>
+                    <endpoints>
+                        <bean class="dido.vertx.RequestEchoEndpoint" key="/foo"/>
+                    </endpoints>
+                </vertx:http-server>
+            </jobs>
+        </cascade>
+    </job>
+</oddjob>

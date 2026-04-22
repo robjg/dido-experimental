@@ -77,7 +77,7 @@ class HttpDidoClientServerTest {
         clientStates.checkWait();
 
         List<?> actual = new OddjobLookup(clientOddjob).lookup("data.list", List.class);
-        List<?> expected = new OddjobLookup(serverOddjob).lookup("data.list", List.class);
+        List<?> expected = new OddjobLookup(serverOddjob).lookup("dido/data.list", List.class);
 
         assertThat(actual, is(expected));
 

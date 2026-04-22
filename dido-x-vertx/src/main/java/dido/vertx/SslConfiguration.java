@@ -76,7 +76,7 @@ public class SslConfiguration implements ClientOptionsModifier, ServerOptionsMod
 
     /**
      * @oddjob.property
-     * @oddjob.description Should the server perform client authentication. NONE/WANT/NEED.
+     * @oddjob.description Should the server perform client authentication. NONE/REQUEST/REQUIRED.
      * @oddjob.required No, defaults to NONE, and only applicable to a server.
      */
     private volatile ClientAuth clientAuth;

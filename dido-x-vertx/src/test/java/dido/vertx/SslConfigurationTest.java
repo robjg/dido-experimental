@@ -27,27 +27,11 @@ class SslConfigurationTest {
 
     @BeforeEach
     void setUp() {
-        pkiProps = new Properties();
-        pkiProps.setProperty("work.dir", "target/work/SslConfigurationTest");
-
-//        createPkiStores();
+        pkiProps = PkiStoresUtil.of( "target/work/SslConfigurationTest")
+                .createStoresIfMissing()
+                .getProperties();
     }
 
-
-    void createPkiStores() {
-
-
-        File setupPkiFile = new File(Objects.requireNonNull(
-                getClass().getResource("/examples/SetupPkiStores.xml")).getFile());
-
-        Oddjob pkiOddjob = new Oddjob();
-        pkiOddjob.setFile(setupPkiFile);
-        pkiOddjob.setProperties(pkiProps);
-
-        pkiOddjob.run();
-
-        assertThat(pkiOddjob.lastStateEvent().getState(), is(ParentState.COMPLETE));
-    }
 
     @Test
     void roundTrip() throws InterruptedException, ArooaConversionException {
@@ -106,7 +90,7 @@ class SslConfigurationTest {
         clientStates.checkWait();
 
         List<?> actual = new OddjobLookup(clientOddjob).lookup("data.list", List.class);
-        List<?> expected = new OddjobLookup(serverOddjob).lookup("data.list", List.class);
+        List<?> expected = new OddjobLookup(serverOddjob).lookup("dido/data.list", List.class);
 
         assertThat(actual, is(expected));
 

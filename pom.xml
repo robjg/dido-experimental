@@ -17,6 +17,7 @@
         <module>dido-x-ema</module>
         <module>dido-x-swagger</module>
         <module>dido-x-vertx</module>
+        <module>dido-x-jackson-dataformat</module>
     </modules>
 
     <properties>

@@ -1,14 +1,20 @@
 package dido.vertx;
 
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.AuthenticationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * @oddjob.description An HTTP Server for publishing {@link DidoOutEndpoint}s.
@@ -22,9 +28,11 @@ public class HttpDidoServerService {
 
     private String name;
 
-    private final Map<String, DidoOutEndpoint> endpoints = new HashMap<>();
+    private final Map<String, Supplier<Function<RoutingContext, Future<?>>>> endpoints = new HashMap<>();
 
     private ServerOptionsModifier sslOptions; ;
+
+    private AuthenticationHandler authenticationHandler;
 
     private Vertx vertx;
 
@@ -46,18 +54,18 @@ public class HttpDidoServerService {
 
         Router router = Router.router(vertx);
 
-        for (Map.Entry<String, DidoOutEndpoint> entry : endpoints.entrySet()) {
+        for (Map.Entry<String, Supplier<Function<RoutingContext, Future<?>>>> entry : endpoints.entrySet()) {
             String path = entry.getKey();
-            DidoOutEndpoint endpoint = entry.getValue();
-            String mediaType = endpoint.getMediaType() == null ? "application/octet-stream" : endpoint.getMediaType();
+            Supplier<Function<RoutingContext, Future<?>>> endpoint = entry.getValue();
 
-            logger.info("Adding endpoint at {} for media type {}", path, mediaType);
+            logger.info("Adding endpoint at {} of {}", path, endpoint);
 
-            router.route(path)
-                    .respond(routingContext ->
-                            routingContext.response()
-                                    .putHeader("content-type", mediaType)
-                                    .end(endpoint.get()));
+            Route route = router.route(path);
+
+            Optional.ofNullable(this.authenticationHandler)
+                    .ifPresent(route::handler);
+
+            route.respond(inferFuture(endpoint.get()));
         }
 
         HttpServerOptions serverOptions = new HttpServerOptions();
@@ -91,6 +99,11 @@ public class HttpDidoServerService {
         return future;
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    <T> Function<RoutingContext, Future<T>> inferFuture(Function<RoutingContext, Future<?>> future) {
+        return (Function<RoutingContext, Future<T>>) (Function) future;
+    }
+
     public void stop() {
 
         if (close != null) {
@@ -115,6 +128,14 @@ public class HttpDidoServerService {
         this.sslOptions = sslOptions;
     }
 
+    public AuthenticationHandler getAuthenticationHandler() {
+        return authenticationHandler;
+    }
+
+    public void setAuthenticationHandler(AuthenticationHandler authenticationHandler) {
+        this.authenticationHandler = authenticationHandler;
+    }
+
     public Vertx getVertx() {
         return vertx;
     }
@@ -131,7 +152,7 @@ public class HttpDidoServerService {
         this.port = port;
     }
 
-    public void setEndpoints(String path, DidoOutEndpoint endpoint) {
+    public void setEndpoints(String path, Supplier<Function<RoutingContext, Future<?>>> endpoint) {
         if (endpoint == null) {
             endpoints.remove(path);
         } else {
@@ -139,7 +160,7 @@ public class HttpDidoServerService {
         }
     }
 
-    public DidoOutEndpoint getEndpoints(String path) {
+    public Supplier<Function<RoutingContext, Future<?>>> getEndpoints(String path) {
         return endpoints.get(path);
     }
 

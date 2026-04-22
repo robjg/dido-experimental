@@ -11,14 +11,14 @@
                 <oddjob id="dido" file="${oddjob.dir}/CsvDidoPipe.xml"/>
                 <vertx:http-server id="server" xmlns:vertx="oddjob:vertx" port="${example.server.port}">
                     <endpoints>
-                        <vertx:dido-out key="/data" mediaType="application/json">
+                        <is key="/data" mediaType="application/json">
                             <how>
                                 <dido:json xmlns:dido="oddjob:dido"/>
                             </how>
                             <data>
                                 <value value="${dido/data.list}"/>
                             </data>
-                        </vertx:dido-out>
+                        </is>
                     </endpoints>
                 </vertx:http-server>
             </jobs>

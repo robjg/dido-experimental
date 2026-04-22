@@ -3,6 +3,7 @@ package dido.vertx;
 import dido.data.DidoData;
 import dido.how.DataInHow;
 import io.vertx.core.Vertx;
+import io.vertx.ext.auth.authentication.Credentials;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 import org.slf4j.Logger;
@@ -42,6 +43,8 @@ public class HttpDidoClientJob implements Callable<CompletableFuture<Integer>> {
     private Consumer<? super DidoData> to;
 
     private ClientOptionsModifier sslOptions;
+
+    private Credentials credentials;
 
     private Executor executor;
 

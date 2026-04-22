@@ -11,17 +11,6 @@
                         <value key="example.server.port" value="8080"/>
                     </values>
                 </properties>
-                <variables id="ourVars">
-                    <ourSchema>
-                        <dido:schema xmlns:dido="oddjob:dido">
-                            <of>
-                                <dido:field name="Fruit" type="java.lang.String"/>
-                                <dido:field name="Qty" type="int"/>
-                                <dido:field name="Price" type="double"/>
-                            </of>
-                        </dido:schema>
-                    </ourSchema>
-                </variables>
                 <bus:bus xmlns:bus="oddjob:beanbus">
                     <of>
                         <vertx:http-client xmlns:vertx="oddjob:vertx">
@@ -31,7 +20,7 @@
                             <dataInHow>
                                 <dido:json xmlns:dido="oddjob:dido">
                                     <schema>
-                                        <value value="${ourVars.ourSchema}"/>
+                                        <import file="${oddjob.dir}/FruitSchema.xml"/>
                                     </schema>
                                 </dido:json>
                             </dataInHow>

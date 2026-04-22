@@ -3,17 +3,21 @@ package dido.vertx;
 import dido.data.DidoData;
 import dido.how.DataOut;
 import dido.how.DataOutHow;
+import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.ext.web.RoutingContext;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
  * @oddjob.description Provides Dido Data to Vertx. Any type of Dido format that can
  * provide an {@code OutputStream} can be used.
  */
-public class DidoOutEndpoint implements Supplier<Buffer> {
+public class DidoOutEndpoint implements Supplier<Function<RoutingContext, Future<?>>> {
 
     private static final int DEFAULT_BUFFER_SIZE = 256;
 
@@ -25,18 +29,39 @@ public class DidoOutEndpoint implements Supplier<Buffer> {
 
     private int bufferSize;
 
+
     @Override
-    public Buffer get() {
+    public Function<RoutingContext, Future<?>> get() {
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream(
-                bufferSize == 0 ? DEFAULT_BUFFER_SIZE : bufferSize);
+        Iterable<DidoData> data = Objects.requireNonNull(this.data, "Data is null");
 
-        try (DataOut dataOut = how.outTo(out)) {
+        String mediaType = Objects.requireNonNullElse(this.mediaType, "application/octet-stream");
 
-            data.forEach(dataOut);
-        }
+        DataOutHow<OutputStream> how = Objects.requireNonNull(this.how, "How is null");
 
-        return Buffer.buffer(out.toByteArray());
+        int bufferSize = this.bufferSize == 0 ? DEFAULT_BUFFER_SIZE : this.bufferSize;
+
+        return new Function<>() {
+
+            public Future<?> apply(RoutingContext routingContext) {
+
+                ByteArrayOutputStream out = new ByteArrayOutputStream(bufferSize);
+
+                try (DataOut dataOut = how.outTo(out)) {
+
+                    data.forEach(dataOut);
+                }
+
+                return routingContext.response()
+                                .putHeader("content-type", mediaType)
+                                .end(Buffer.buffer(out.toByteArray()));
+            }
+
+            @Override
+            public String toString() {
+                return "DidoOutEndpoint " + mediaType;
+            }
+        };
     }
 
     public Iterable<DidoData> getData() {
