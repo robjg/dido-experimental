@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<oddjob id="oddjob">
+    <job>
+        <cascade>
+            <jobs>
+                <oddjob file="${oddjob.dir}/EmaIProvider.xml"/>
+                <oddjob file="${oddjob.dir}/EmaConsumer.xml"/>
+            </jobs>
+        </cascade>
+    </job>
+</oddjob>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<oddjob>
+    <job>
+        <sequential>
+            <jobs>
+                <bean class="dido.elsewhere.ema.TickingTableService" id="tickerTable"/>
+                <lseg:ema-iprovider xmlns:lseg="oddjob:lseg">
+                    <table>
+                        <value value="${tickerTable.table}"/>
+                    </table>
+                </lseg:ema-iprovider>
+            </jobs>
+        </sequential>
+    </job>
+</oddjob>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<oddjob>
+    <job>
+        <lseg:ema-consumer id="consumer" host="localhost:14002" serviceName="DIRECT_FEED" xmlns:lseg="oddjob:lseg">
+            <schema>
+                <value value="#{Java.type('dido.elsewhere.ema.TickingTableService').SCHEMA}"/>
+            </schema>
+            <symbols>
+                <list>
+                    <values>
+                        <value value="IBM.N"/>
+                        <value value="APPL.OQ"/>
+                        <value value="MSFT.OQ"/>
+                    </values>
+                </list>
+            </symbols>
+        </lseg:ema-consumer>
+    </job>
+</oddjob>

@@ -1,0 +1,9 @@
+<arooa:descriptor xmlns:arooa="http://rgordon.co.uk/oddjob/arooa"
+                  prefix="lseg" namespace="oddjob:lseg">
+    <components>
+        <arooa:bean-def element='ema-consumer'
+                        className='dido.elsewhere.ema.EmaConsumerService'/>
+        <arooa:bean-def element="ema-iprovider"
+                        className="dido.elsewhere.ema.EmaIProviderService"/>
+    </components>
+</arooa:descriptor>
