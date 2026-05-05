@@ -17,6 +17,9 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.Map;
 
+/**
+ * Provide {@link DidoData} by wrapping OMM {@link FieldEntry}s.
+ */
 public class DidoOmmData  {
 
     private static final Logger logger = LoggerFactory.getLogger(DidoOmmData.class);
@@ -41,6 +44,9 @@ public class DidoOmmData  {
         int i = 0;
         for (FieldEntry fieldEntry : fieldEntries) {
 
+            getters[i] = fieldGetter(fieldEntry.loadType(), i);
+            ++i;
+
             SchemaField schemaField = schemaField(fieldEntry, i);
             if (schemaField == null) {
                 throw new IllegalArgumentException("Unrecognized type for Fid: " + fieldEntry.fieldId() +
@@ -48,13 +54,14 @@ public class DidoOmmData  {
                         DataType.asString(fieldEntry.load().dataType()) + " Value: ");
 
             }
+
             schemaFields.add(schemaField);
-            getters[i] = fieldGetter(fieldEntry.loadType(), i);
-            ++i;
             fidMap.put(fieldEntry.fieldId(), i);
         }
 
-        return new DidoOmmData(new Schema(schemaFields, 1, size, getters),
+        return new DidoOmmData(
+                new Schema(schemaFields, size == 0 ? 0 : 1,
+                        size, getters),
                 fidMap);
     }
 
@@ -166,7 +173,7 @@ public class DidoOmmData  {
 
     static SchemaField schemaField(FieldEntry fieldEntry, int index) {
 
-        Class<?> type = clasFor(fieldEntry.loadType());
+        Class<?> type = classFor(fieldEntry.loadType());
         if (type == null) {
             return null;
         }
@@ -177,7 +184,7 @@ public class DidoOmmData  {
         return SchemaField.of(index, name, type);
     }
 
-    static Class<?> clasFor(int dataType) {
+    static Class<?> classFor(int dataType) {
 
         return switch (dataType) {
             case DataType.DataTypes.REAL -> double.class;
