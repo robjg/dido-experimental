@@ -16,7 +16,7 @@
                     <endpoints>
                         <vertx:dido-out key="/data" mediaType="application/json">
                             <how>
-                                <dido:json xmlns:dido="oddjob:dido"/>
+                                <dido:json-out xmlns:dido="oddjob:dido"/>
                             </how>
                             <data>
                                 <value value="${dido/data.list}"/>

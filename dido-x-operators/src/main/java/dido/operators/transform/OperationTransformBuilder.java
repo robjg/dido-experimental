@@ -157,7 +157,7 @@ public class OperationTransformBuilder {
         return new DidoTransform() {
 
             @Override
-            public DataSchema getResultantSchema() {
+            public DataSchema getSchema() {
                 return factory.getSchema();
             }
 

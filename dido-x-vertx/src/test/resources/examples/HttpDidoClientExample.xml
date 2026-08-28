@@ -16,11 +16,11 @@
                                 <value value="http://${example.server.host}:${example.server.port}/data"/>
                             </url>
                             <dataInHow>
-                                <dido:json xmlns:dido="oddjob:dido">
+                                <dido:json-in xmlns:dido="oddjob:dido">
                                     <schema>
                                         <import file="${oddjob.dir}/FruitSchema.xml"/>
                                     </schema>
-                                </dido:json>
+                                </dido:json-in>
                             </dataInHow>
                         </vertx:http-client>
                         <bus:collect id="data"/>

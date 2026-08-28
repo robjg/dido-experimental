@@ -18,11 +18,11 @@
                                 <value value="https://${ssltest.hostname}:${example.server.port}/data"/>
                             </url>
                             <dataInHow>
-                                <dido:json xmlns:dido="oddjob:dido">
+                                <dido:json-in xmlns:dido="oddjob:dido">
                                     <schema>
                                         <import file="${oddjob.dir}/FruitSchema.xml"/>
                                     </schema>
-                                </dido:json>
+                                </dido:json-in>
                             </dataInHow>
                             <sslOptions>
                                 <vertx:ssl-configuration keyStorePassword="clistorepwd" keyStorePath="${ssltest.stores.dir}/client_keystore.p12" keyStoreType="PKCS12" trustStorePassword="clitrustpwd" trustStorePath="${ssltest.stores.dir}/client_trustore.p12" trustStoreType="PKCS12"/>
