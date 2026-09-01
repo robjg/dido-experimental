@@ -4,11 +4,11 @@
             <of>
                 <dido:data-in xmlns:dido="oddjob:dido">
                     <how>
-                        <dido:csv>
+                        <dido:csv-in>
                             <schema>
                                 <import file="${oddjob.dir}/FruitSchema.xml"/>
                             </schema>
-                        </dido:csv>
+                        </dido:csv-in>
                     </how>
                     <from>
                         <buffer><![CDATA[Apple,5,19.50
