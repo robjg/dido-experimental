@@ -2,7 +2,7 @@ package dido.data.partial;
 
 import dido.data.DidoData;
 
-public class PartialUpdateIndexed extends AbstractPartialUpdate implements PartialUpdate {
+public class PartialDataIndexed extends AbstractPartialData implements PartialData {
 
     private final DidoData data;
 
@@ -10,13 +10,13 @@ public class PartialUpdateIndexed extends AbstractPartialUpdate implements Parti
 
     private int lastPos;
 
-    private PartialUpdateIndexed(DidoData data, int[] modifiedIndices) {
+    private PartialDataIndexed(DidoData data, int[] modifiedIndices) {
         this.data = data;
         this.modifiedIndices = modifiedIndices;
     }
 
-    public static PartialUpdate of(DidoData data, int... modifiedIndices) {
-        return new PartialUpdateIndexed(data, modifiedIndices.clone());
+    public static PartialData of(DidoData data, int... modifiedIndices) {
+        return new PartialDataIndexed(data, modifiedIndices.clone());
     }
 
     @Override

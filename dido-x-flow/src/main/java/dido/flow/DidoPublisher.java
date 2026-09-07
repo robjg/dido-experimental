@@ -1,24 +1,24 @@
 package dido.flow;
 
 import dido.data.DidoData;
-import dido.data.partial.PartialUpdate;
+import dido.data.partial.PartialData;
 
 import java.util.function.Consumer;
 
 public interface DidoPublisher {
 
-    DidoSubscription didoSubscribe(DidoSubscriber subscriber);
+    DidoSubscription subscribe(DidoSubscriber subscriber);
 
-    default DidoSubscription didoSubscribe(Consumer<? super DidoData> consumer) {
+    default DidoSubscription subscribe(Consumer<? super DidoData> consumer) {
 
-        return didoSubscribe(new DidoSubscriber() {
+        return subscribe(new DidoSubscriber() {
             @Override
             public void onData(DidoData data) {
                 consumer.accept(data);
             }
 
             @Override
-            public void onPartial(PartialUpdate partial) {
+            public void onPartial(PartialData partial) {
 
                 // doesn't work conceptionally....
             }

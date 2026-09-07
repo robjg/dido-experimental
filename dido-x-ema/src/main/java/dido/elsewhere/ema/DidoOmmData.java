@@ -3,7 +3,7 @@ package dido.elsewhere.ema;
 import com.refinitiv.ema.access.*;
 import dido.data.*;
 import dido.data.NoSuchFieldException;
-import dido.data.partial.PartialUpdate;
+import dido.data.partial.PartialData;
 import dido.data.schema.DataSchemaImpl;
 import dido.data.useful.AbstractData;
 import dido.data.useful.AbstractFieldGetter;
@@ -82,7 +82,7 @@ public class DidoOmmData  {
         return new Data(entries);
     }
 
-    public PartialUpdate partial(FieldList fieldEntries) {
+    public PartialData partial(FieldList fieldEntries) {
 
         int size = fieldEntries.size();
         FieldEntry[] entries = new FieldEntry[size];
@@ -95,7 +95,7 @@ public class DidoOmmData  {
 
         DidoData data = data(entries);
 
-        return PartialUpdate.from(data).withIndices(indices);
+        return PartialData.from(data).withIndices(indices);
     }
 
     static int nanoSecondsFrom(int milliSeconds, int microSeconds, int nanoSeconds) {

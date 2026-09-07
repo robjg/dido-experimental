@@ -1,9 +1,10 @@
 package dido.table.util;
 
 import dido.data.DidoData;
-import dido.data.partial.PartialUpdate;
+import dido.data.partial.PartialData;
 import dido.flow.QuietlyCloseable;
-import dido.table.KeyedSubscriber;
+import dido.flow.KeyedDidoSubscriber;
+import dido.flow.util.KeyedDidoDataSubscribers;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -12,9 +13,9 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-class KeyedSubscribersTest {
+class KeyedDidoSubscribersTest {
 
-    static class OurSubscriber implements KeyedSubscriber<Integer> {
+    static class OurDidoSubscriber implements KeyedDidoSubscriber<Integer> {
 
         List<String> results = new ArrayList<>();
 
@@ -24,7 +25,7 @@ class KeyedSubscribersTest {
         }
 
         @Override
-        public void onPartial(Integer key, PartialUpdate partial) {
+        public void onPartial(Integer key, PartialData partial) {
             results.add("onPartial: " + key + "=" + partial.getData());
         }
 
@@ -39,27 +40,27 @@ class KeyedSubscribersTest {
 
         DidoData apple = DidoData.of("Apple");
 
-        KeyedDataSubscribers<Integer> test = new KeyedDataSubscribers<>(apple.getSchema());
+        KeyedDidoDataSubscribers<Integer> test = new KeyedDidoDataSubscribers<>(apple.getSchema());
 
         test.onData(1, apple);
-        test.onPartial(1, PartialUpdate.from(apple).withIndices(1));
+        test.onPartial(1, PartialData.from(apple).withIndices(1));
         test.onDelete(1);
 
-        OurSubscriber s1 = new OurSubscriber();
+        OurDidoSubscriber s1 = new OurDidoSubscriber();
 
         QuietlyCloseable close1 = test.addSubscriber(s1);
 
         DidoData orange = DidoData.of("Orange");
 
         test.onData(2, orange);
-        test.onPartial(2, PartialUpdate.from(orange).withIndices(1));
+        test.onPartial(2, PartialData.from(orange).withIndices(1));
         test.onDelete(2);
 
         assertThat(s1.results, contains("onData: 2={[1:f_1]=Orange}", "onPartial: 2={[1:f_1]=Orange}", "onDelete: 2"));
 
         s1.results.clear();
 
-        OurSubscriber s2 = new OurSubscriber();
+        OurDidoSubscriber s2 = new OurDidoSubscriber();
 
         QuietlyCloseable close2 = test.addSubscriber(s2);
 

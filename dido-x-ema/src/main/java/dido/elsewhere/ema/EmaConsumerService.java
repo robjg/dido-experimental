@@ -40,7 +40,7 @@ public class EmaConsumerService {
                 FieldList fieldList = refreshMsg.payload().fieldList();
                 didoOmmData = DidoOmmData.of(fieldList);
 
-                table.onData(didoOmmData.data(fieldList));
+                table.onData(refreshMsg.name(), didoOmmData.data(fieldList));
             }
             else {
                 logger.warn("onRefreshMsg: unsupported data type");
@@ -57,7 +57,7 @@ public class EmaConsumerService {
 
                 FieldList fieldList = updateMsg.payload().fieldList();
 
-                table.onPartial(didoOmmData.partial(fieldList));
+                table.onPartial(updateMsg.name(), didoOmmData.partial(fieldList));
             }
             else {
                 logger.warn("onUpdateMsg: unsupported data type");
@@ -85,8 +85,7 @@ public class EmaConsumerService {
         logger.info("Starting EmaConsumerService for host: {} and symbols: {}",
                 host, symbols);
 
-        this.table = DataTableBasic.<String>withSchema(schema)
-                .create();
+        this.table = DataTableBasic.forSchema(schema);
 
         OmmConsumerConfig config = EmaFactory.createOmmConsumerConfig();
 

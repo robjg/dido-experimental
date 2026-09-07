@@ -1,9 +1,9 @@
 package dido.elsewhere.ema;
 
 import dido.data.DidoData;
-import dido.data.partial.PartialUpdate;
+import dido.data.partial.PartialData;
 import dido.table.DataTable;
-import dido.table.KeyedSubscriber;
+import dido.flow.KeyedDidoSubscriber;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.oddjob.Oddjob;
@@ -58,14 +58,14 @@ class ConsumerIProviderTest {
 
         CountDownLatch latch = new CountDownLatch(3);
 
-        clientTable.tableSubscribe(new KeyedSubscriber<String>() {
+        clientTable.subscribe(new KeyedDidoSubscriber<String>() {
             @Override
             public void onData(String key, DidoData data) {
                 latch.countDown();
             }
 
             @Override
-            public void onPartial(String key, PartialUpdate data) {
+            public void onPartial(String key, PartialData partial) {
 
             }
 

@@ -4,7 +4,7 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.NoSuchFieldException;
 import dido.data.partial.IndexSequence;
-import dido.data.partial.PartialUpdate;
+import dido.data.partial.PartialData;
 import dido.data.useful.AbstractData;
 import dido.flow.DidoSubscriber;
 import dido.table.LiveRow;
@@ -47,7 +47,7 @@ public class ArrayRowImpl implements LiveRow {
         }
     }
 
-    public void onPartial(PartialUpdate partial, Consumer<LiveRow> ops) {
+    public void onPartial(PartialData partial, Consumer<LiveRow> ops) {
         load(partial, partial.getData(), ops);
 
         List<Integer> changed = new ArrayList<>();
@@ -60,7 +60,7 @@ public class ArrayRowImpl implements LiveRow {
 
         if (!changed.isEmpty() && didoSubscriber != null) {
             int[] ai = changed.stream().mapToInt(Integer::intValue).toArray();
-            didoSubscriber.onPartial(PartialUpdate.from(new RowData()).withIndices(ai));
+            didoSubscriber.onPartial(PartialData.from(new RowData()).withIndices(ai));
         }
     }
 

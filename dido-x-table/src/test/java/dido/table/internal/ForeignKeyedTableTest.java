@@ -2,7 +2,9 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.flow.util.KeyExtractors;
+import dido.flow.DidoSubscriber;
+import dido.flow.util.KeyUtil;
+import dido.flow.util.SubscriberUtil;
 import dido.table.CloseableTable;
 import org.junit.jupiter.api.Test;
 
@@ -37,21 +39,24 @@ class ForeignKeyedTableTest {
             .of("G2", "Smith")
             .toList();
 
-    DataTableBasic<String> fruitTable = DataTableBasic.<String>withSchema(fruitSchema)
-            .create();
+    DataTableBasic<String> fruitTable = DataTableBasic.forSchema(fruitSchema);
 
-    DataTableBasic<String> grocerTable = DataTableBasic.<String>withSchema(grocerSchema)
-            .create();
+    DataTableBasic<String> grocerTable = DataTableBasic.forSchema(grocerSchema);
 
     @Test
     void existingTables() {
 
-        fruit.forEach(fruitTable::onData);
-        grocers.forEach(grocerTable::onData);
+        DidoSubscriber fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                fruitTable, fruitTable.getSchema());
+        DidoSubscriber grocerSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                grocerTable, grocerTable.getSchema());
+
+        fruit.forEach(fruitSubscriber::onData);
+        grocers.forEach(grocerSubscriber::onData);
 
         CloseableTable<String> grocersByFruitId = ForeignKeyedTable
                 .byForeignKey(fruitTable, grocerTable,
-                        KeyExtractors.<String>fromNamed("GrocerId").keyExtractorFor(fruitSchema));
+                        KeyUtil.fromNamed(fruitTable.getSchema(), "GrocerId"));
 
         assertThat(grocersByFruitId.getSchema(), is(grocerSchema));
 

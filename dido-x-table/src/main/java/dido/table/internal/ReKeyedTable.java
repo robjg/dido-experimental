@@ -2,16 +2,16 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialUpdate;
+import dido.data.partial.PartialData;
+import dido.flow.DidoSubscription;
+import dido.flow.KeyedDidoSubscriber;
 import dido.flow.QuietlyCloseable;
-import dido.flow.util.KeyExtractor;
+import dido.flow.util.KeyedDidoDataSubscribers;
 import dido.table.CloseableTable;
 import dido.table.DataTable;
-import dido.table.KeyedSubscriber;
-import dido.table.KeyedSubscription;
-import dido.table.util.KeyedDataSubscribers;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -30,24 +30,25 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
 
     private final DataTable<K2> otherTable;
 
-    private final KeyedDataSubscribers<K1> subscribers;
+    private final KeyedDidoDataSubscribers<K1> subscribers;
 
     private final List<QuietlyCloseable> closeables = new ArrayList<>();
 
     public ReKeyedTable(DataTable<K2> otherTable) {
         this.otherTable = otherTable;
-        subscribers = new KeyedDataSubscribers<>(otherTable.getSchema());
+        subscribers = new KeyedDidoDataSubscribers<>(otherTable.getSchema());
     }
 
     public static <K1 extends Comparable<K1>, K2 extends Comparable<K2>>
-    CloseableTable<K1> remapKey(DataTable<K2> existingTable, KeyExtractor<K1> keyExtractor) {
+    CloseableTable<K1> remapKey(DataTable<K2> existingTable,
+                                Function<? super DidoData, ? extends K1> keyExtractor) {
 
         ReKeyedTable<K1, K2> table = new ReKeyedTable<>(existingTable);
 
-        KeyedSubscriber<K2> existingSubscriber = new KeyedSubscriber<>() {
+        KeyedDidoSubscriber<K2> existingSubscriber = new KeyedDidoSubscriber<>() {
             @Override
             public void onData(K2 other, DidoData data) {
-                K1 key = keyExtractor.keyOf(data);
+                K1 key = keyExtractor.apply(data);
                 K2 existing = table.mappingTo.put(key, other);
                 if (existing != null && !existing.equals(other)) {
                     table.otherMappings.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(existing);
@@ -57,7 +58,7 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
             }
 
             @Override
-            public void onPartial(K2 key, PartialUpdate partial) {
+            public void onPartial(K2 key, PartialData partial) {
                 K1 left = table.mappingFrom.get(key);
                 table.subscribers.onPartial(left, partial);
             }
@@ -87,7 +88,7 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
         existingTable.entrySet().forEach(
                 e -> existingSubscriber.onData(e.getKey(), e.getValue()));
 
-        table.closeables.add(existingTable.tableSubscribe(existingSubscriber));
+        table.closeables.add(existingTable.subscribe(existingSubscriber));
 
         return table;
     }
@@ -132,7 +133,7 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
     }
 
     @Override
-    public KeyedSubscription tableSubscribe(KeyedSubscriber<K1> listener) {
+    public DidoSubscription subscribe(KeyedDidoSubscriber<K1> listener) {
         return subscribers.addSubscriber(listener);
     }
 

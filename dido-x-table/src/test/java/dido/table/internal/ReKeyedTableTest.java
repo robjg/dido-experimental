@@ -2,7 +2,9 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.flow.util.KeyExtractors;
+import dido.flow.DidoSubscriber;
+import dido.flow.util.KeyUtil;
+import dido.flow.util.SubscriberUtil;
 import dido.table.CloseableTable;
 import org.junit.jupiter.api.Test;
 
@@ -28,17 +30,19 @@ class ReKeyedTableTest {
             .of("F4", "Apple", "Green")
             .toList();
 
-    DataTableBasic<String> fruitTable = DataTableBasic.<String>withSchema(fruitSchema)
-            .create();
+    DataTableBasic<String> fruitTable = DataTableBasic.forSchema(fruitSchema);
 
     @Test
     void existingTables() {
 
-        fruit.forEach(fruitTable::onData);
+        DidoSubscriber fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                fruitTable, fruitTable.getSchema());
+
+        fruit.forEach(fruitSubscriber::onData);
 
         CloseableTable<String> fruitByFruit = ReKeyedTable
                 .remapKey(fruitTable,
-                        KeyExtractors.<String>fromNamed("Fruit").keyExtractorFor(fruitSchema));
+                        KeyUtil.fromNamed(fruitSchema, "Fruit"));
 
         assertThat(fruitByFruit.getSchema(), is(fruitSchema));
 
@@ -48,7 +52,7 @@ class ReKeyedTableTest {
         assertThat(fruitByFruit.get("Banana"), is(DidoData.of( "F2", "Banana", "Yellow")));
         assertThat(fruitByFruit.get("Orange"), is(DidoData.of( "F3", "Orange", "Orange")));
 
-        fruitTable.onDelete(DidoData.of("F4"));
+        fruitSubscriber.onDelete(DidoData.of("F4"));
 
         assertThat(fruitByFruit.get("Apple"), is(DidoData.of( "F1", "Apple", "Red")));
 

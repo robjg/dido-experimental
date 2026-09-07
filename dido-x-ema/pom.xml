@@ -27,7 +27,7 @@
         <dependency>
             <groupId>com.refinitiv.ema</groupId>
             <artifactId>ema</artifactId>
-            <version>3.9.2.0</version>
+            <version>3.10.0.2</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>

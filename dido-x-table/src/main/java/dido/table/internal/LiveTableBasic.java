@@ -2,18 +2,14 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialUpdate;
+import dido.data.partial.PartialData;
 import dido.flow.DidoSubscriber;
 import dido.flow.DidoSubscription;
-import dido.flow.util.KeyExtractor;
-import dido.flow.util.KeyExtractorProvider;
-import dido.flow.util.KeyExtractors;
+import dido.flow.KeyedDidoSubscriber;
+import dido.flow.util.KeyedDidoDataSubscribers;
 import dido.operators.transform.OperationDefinition;
-import dido.table.KeyedSubscriber;
-import dido.table.KeyedSubscription;
 import dido.table.LiveRow;
 import dido.table.LiveTable;
-import dido.table.util.KeyedDataSubscribers;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,38 +18,26 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
 
     private final DataSchema schema;
 
-    private final KeyExtractor<? extends K> keyExtractor;
-
     private final Map<K, ArrayRowImpl> rows = new TreeMap<>();
 
     private final LiveOperation ops;
 
-    private final KeyedDataSubscribers<K> subscribers;
+    private final KeyedDidoDataSubscribers<K> subscribers;
 
     private final List<DidoSubscriber> didoSubscribers = new ArrayList<>();
 
     private LiveTableBasic(Settings<K> settings) {
         this.ops = settings.operationBuilder.build();
         this.schema = ops.getOutSchema();
-        this.keyExtractor = settings.keyExtractor == null ?
-                ((KeyExtractorProvider<K>)KeyExtractors.fromFirstField())
-                        .keyExtractorFor(schema) : settings.keyExtractor;
-        this.subscribers = new KeyedDataSubscribers<>(schema);
+        this.subscribers = new KeyedDidoDataSubscribers<>(schema);
     }
 
     public static class Settings<K extends Comparable<K>> {
 
         private final LiveOperationBuilder operationBuilder;
 
-        private KeyExtractor<? extends K> keyExtractor;
-
         public Settings(DataSchema schema) {
             this.operationBuilder = LiveOperationBuilder.forSchema(schema);
-        }
-
-        public Settings<K> keyExtractor(KeyExtractor<? extends K> keyExtractor) {
-            this.keyExtractor = keyExtractor;
-            return this;
         }
 
         public Settings<K> addOperation(OperationDefinition opDef) {
@@ -79,7 +63,7 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
         }
 
         @Override
-        public void onPartial(PartialUpdate partial) {
+        public void onPartial(PartialData partial) {
             didoSubscribers.forEach(r -> r.onPartial(partial));
         }
 
@@ -90,9 +74,8 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
     }
 
     @Override
-    public void onData(DidoData data) {
+    public void onData(K key, DidoData data) {
 
-        K key = keyExtractor.keyOf(data);
         ArrayRowImpl arrayRow = rows.computeIfAbsent(key,
                 k -> new ArrayRowImpl(schema, new InternalDidoSubscriber()));
 
@@ -102,24 +85,24 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
     }
 
     @Override
-    public void onPartial(PartialUpdate partial) {
+    public void onPartial(K key, PartialData partial) {
 
         DidoData data = partial.getData();
 
         ArrayRowImpl arrayRow = Objects.requireNonNull(
-                rows.get(keyExtractor.keyOf(data)), "Failed to find row for " + partial);
+                rows.get(key), "Failed to find row for " + partial);
 
         arrayRow.onPartial(partial, ops);
     }
 
     @Override
-    public void onDelete(DidoData keyData) {
-
+    public void onDelete(K key) {
+        rows.remove(key);
     }
 
     @Override
-    public LiveRow getRow(DidoData data) {
-        return rows.get(keyExtractor.keyOf(data));
+    public LiveRow getRow(K key) {
+        return rows.get(key);
     }
 
     @Override
@@ -152,7 +135,7 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
     }
 
     @Override
-    public KeyedSubscription tableSubscribe(KeyedSubscriber<K> listener) {
+    public DidoSubscription subscribe(KeyedDidoSubscriber<K> listener) {
         return subscribers.addSubscriber(listener);
     }
 

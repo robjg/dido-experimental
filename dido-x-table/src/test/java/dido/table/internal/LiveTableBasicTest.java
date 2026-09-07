@@ -3,6 +3,8 @@ package dido.table.internal;
 import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.schema.SchemaBuilder;
+import dido.flow.DidoSubscriber;
+import dido.flow.util.SubscriberUtil;
 import dido.operators.transform.BasicOperations;
 import dido.operators.transform.ValueGetter;
 import dido.operators.transform.ValueSetter;
@@ -23,15 +25,17 @@ class LiveTableBasicTest {
                 .addNamed("Fruit", String.class)
                 .build();
 
-        LiveTable<?> table = LiveTableBasic.forSchema(schema).create();
+        LiveTable<Integer> table = LiveTableBasic.<Integer>forSchema(schema).create();
+
+        DidoSubscriber didoSubscriber = SubscriberUtil.didoSubscriberFrom(table, table.getSchema());
 
         DidoData.withSchema(schema).many()
                 .of(5, "Apple")
                 .of(8, "Pear")
                 .of(3, "Banana")
-                .toList().forEach(table::onData);
+                .toList().forEach(didoSubscriber::onData);
 
-        LiveRow row = table.getRow(DidoData.of(5));
+        LiveRow row = table.getRow(5);
 
         assertThat(row.getValueNamed("Fruit").getString(), is("Apple"));
         table.close();
@@ -46,7 +50,7 @@ class LiveTableBasicTest {
                 .addNamed("Price", String.class)
                 .build();
 
-        LiveTable<?> table = LiveTableBasic.forSchema(schema)
+        LiveTable<Integer> table = LiveTableBasic.<Integer>forSchema(schema)
                 .addOperation(BasicOperations.map()
                         .from("Price")
                         .to("Tax")
@@ -66,13 +70,15 @@ class LiveTableBasicTest {
 
         assertThat(table.getSchema(), is(expectedSchema));
 
+        DidoSubscriber didoSubscriber = SubscriberUtil.didoSubscriberFrom(table, table.getSchema());
+
         DidoData.withSchema(schema).many()
                 .of(5, "Apple", 20.0)
                 .of(8, "Pear", 30.0)
                 .of(3, "Banana", 25.0)
-                .toList().forEach(table::onData);
+                .toList().forEach(didoSubscriber::onData);
 
-        LiveRow row = table.getRow(DidoData.of(5));
+        LiveRow row = table.getRow(5);
 
         assertThat(row.getValueNamed("TotalPrice").getDouble(), is(22.0));
         table.close();

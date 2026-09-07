@@ -1,0 +1,7 @@
+<arooa:descriptor xmlns:arooa="http://rgordon.co.uk/oddjob/arooa"
+                  prefix="dido" namespace="oddjob:dido">
+    <components>
+        <arooa:bean-def element='table'
+                        className='dido.table.beans.BasicTableService'/>
+    </components>
+</arooa:descriptor>

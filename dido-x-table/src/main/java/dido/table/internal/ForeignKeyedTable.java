@@ -2,16 +2,16 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialUpdate;
+import dido.data.partial.PartialData;
+import dido.flow.DidoSubscription;
+import dido.flow.KeyedDidoSubscriber;
 import dido.flow.QuietlyCloseable;
-import dido.flow.util.KeyExtractor;
+import dido.flow.util.KeyedDidoDataSubscribers;
 import dido.table.CloseableTable;
 import dido.table.DataTable;
-import dido.table.KeyedSubscriber;
-import dido.table.KeyedSubscription;
-import dido.table.util.KeyedDataSubscribers;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
@@ -23,16 +23,16 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
 
     private final DataTable<K2> otherTable;
 
-    private final KeyedDataSubscribers<K1> subscribers;
+    private final KeyedDidoDataSubscribers<K1> subscribers;
 
     private final List<QuietlyCloseable> closeables = new ArrayList<>();
 
     public ForeignKeyedTable(DataTable<K2> otherTable) {
         this.otherTable = otherTable;
-        subscribers = new KeyedDataSubscribers<>(otherTable.getSchema());
+        subscribers = new KeyedDidoDataSubscribers<>(otherTable.getSchema());
     }
 
-    class ReferenceTableSubscriber implements KeyedSubscriber<K2> {
+    class ReferenceTableDidoSubscriber implements KeyedDidoSubscriber<K2> {
         @Override
         public void onData(K2 key, DidoData data) {
             Set<K1> lefts = mappingFrom.get(key);
@@ -44,11 +44,11 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
         }
 
         @Override
-        public void onPartial(K2 key, PartialUpdate data) {
+        public void onPartial(K2 key, PartialData partial) {
             Set<K1> lefts = mappingFrom.get(key);
             if (lefts != null) {
                 for (K1 left : lefts) {
-                    subscribers.onPartial(left, data);
+                    subscribers.onPartial(left, partial);
                 }
             }
         }
@@ -65,20 +65,21 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
     }
 
     public static <K1 extends Comparable<K1>, K2 extends Comparable<K2>>
-    CloseableTable<K1> byForeignKey(DataTable<K1> childTable, DataTable<K2> referenceTable, KeyExtractor<K2> keyExtractor) {
+    CloseableTable<K1> byForeignKey(DataTable<K1> childTable, DataTable<K2> referenceTable,
+                                    Function<? super DidoData, ? extends K2> keyExtractor) {
 
         ForeignKeyedTable<K1, K2> table = new ForeignKeyedTable<>(referenceTable);
 
-        KeyedSubscriber<K1> childSubscriber = new KeyedSubscriber<>() {
+        KeyedDidoSubscriber<K1> childSubscriber = new KeyedDidoSubscriber<>() {
             @Override
             public void onData(K1 key, DidoData data) {
-                K2 other = keyExtractor.keyOf(data);
+                K2 other = keyExtractor.apply(data);
                 table.mappingTo.put(key, other);
                 table.mappingFrom.computeIfAbsent(other, k -> new TreeSet<>()).add(key);
             }
 
             @Override
-            public void onPartial(K1 key, PartialUpdate data) {
+            public void onPartial(K1 key, PartialData partial) {
                 // Nothing to do.
             }
 
@@ -96,9 +97,9 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
         childTable.entrySet().forEach(
                 e -> childSubscriber.onData(e.getKey(), e.getValue()));
 
-        table.closeables.add(childTable.tableSubscribe(childSubscriber));
+        table.closeables.add(childTable.subscribe(childSubscriber));
 
-        table.closeables.add(referenceTable.tableSubscribe(table.new ReferenceTableSubscriber()));
+        table.closeables.add(referenceTable.subscribe(table.new ReferenceTableDidoSubscriber()));
 
         return table;
     }
@@ -143,7 +144,7 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
     }
 
     @Override
-    public KeyedSubscription tableSubscribe(KeyedSubscriber<K1> listener) {
+    public DidoSubscription subscribe(KeyedDidoSubscriber<K1> listener) {
         return subscribers.addSubscriber(listener);
     }
 

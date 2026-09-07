@@ -3,19 +3,24 @@ package dido.data.partial;
 import dido.data.DidoData;
 import dido.data.util.FieldSelectionFactory;
 
-public interface PartialUpdate extends IndexSequence {
+public interface PartialData extends IndexSequence {
 
     DidoData getData();
 
-    static FieldSelectionFactory<PartialUpdate> from(DidoData data) {
-        return new FieldSelectionFactory<>(data.getSchema(), ints -> PartialUpdateIndexed.of(data, ints));
+    static FieldSelectionFactory<PartialData> from(DidoData data) {
+        return new FieldSelectionFactory<>(data.getSchema(), ints -> PartialDataIndexed.of(data, ints));
     }
 
-    static PartialUpdate of(DidoData data) {
-        return new PartialUpdateOf(data);
+    static PartialData of(DidoData data, int... indices) {
+        if (indices.length == 0) {
+            return new PartialDataOf(data);
+        }
+        else {
+            return PartialDataIndexed.of(data, indices);
+        }
     }
 
-    static String toString(PartialUpdate partial) {
+    static String toString(PartialData partial) {
         StringBuilder sb = new StringBuilder(partial.lastIndex() * 16);
         sb.append('{');
         for (int index = partial.firstIndex(); index > 0; index = partial.nextIndex(index)) {

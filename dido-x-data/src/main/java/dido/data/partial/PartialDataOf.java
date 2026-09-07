@@ -4,11 +4,11 @@ import dido.data.DidoData;
 
 import java.util.Objects;
 
-public class PartialUpdateOf extends AbstractPartialUpdate implements PartialUpdate {
+public class PartialDataOf extends AbstractPartialData implements PartialData {
 
     private final DidoData data;
 
-    PartialUpdateOf(DidoData data) {
+    PartialDataOf(DidoData data) {
         this.data = Objects.requireNonNull(data);
     }
 

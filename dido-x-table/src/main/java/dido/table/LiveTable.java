@@ -1,12 +1,11 @@
 package dido.table;
 
-import dido.data.DidoData;
-import dido.flow.DidoSubscriber;
+import dido.flow.KeyedDidoSubscriber;
 import dido.flow.QuietlyCloseable;
 
 public interface LiveTable<K extends Comparable<K>>
-        extends DidoSubscriber, DataTable<K>, QuietlyCloseable {
+        extends KeyedDidoSubscriber<K>, DataTable<K>, QuietlyCloseable {
 
-    LiveRow getRow(DidoData data);
+    LiveRow getRow(K key);
 
 }

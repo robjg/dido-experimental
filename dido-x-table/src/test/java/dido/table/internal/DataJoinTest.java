@@ -3,10 +3,11 @@ package dido.table.internal;
 import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.schema.SchemaBuilder;
-import dido.flow.util.KeyExtractors;
+import dido.flow.DidoSubscriber;
+import dido.flow.util.KeyUtil;
+import dido.flow.util.SubscriberUtil;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,22 +49,22 @@ class DataJoinTest {
             .of("G2", "Smith")
             .toList();
 
-    DataTableBasic<String> fruitTable = DataTableBasic.<String>withSchema(fruitSchema)
-            .create();
+    DataTableBasic<String> fruitTable = DataTableBasic.forSchema(fruitSchema);
 
-    DataTableBasic<String> colourTable = DataTableBasic.<String>withSchema(colourSchema)
-            .create();
+    DataTableBasic<String> colourTable = DataTableBasic.forSchema(colourSchema);
 
-    DataTableBasic<String> grocerTable = DataTableBasic.<String>withSchema(grocerSchema)
-            .create();
+    DataTableBasic<String> grocerTable = DataTableBasic.forSchema(grocerSchema);
 
     @Test
     void simpleInnerJoin() {
 
-        List<DidoData> results = new ArrayList<>();
+        DidoSubscriber fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                fruitTable, fruitTable.getSchema());
+        DidoSubscriber colourSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                colourTable, colourTable.getSchema());
 
-        fruit.forEach(fruitTable::onData);
-        colours.forEach(colourTable::onData);
+        fruit.forEach(fruitSubscriber::onData);
+        colours.forEach(colourSubscriber::onData);
 
         DataSchema expectedSchema = SchemaBuilder
                 .builderFrom(fruitSchema)
@@ -88,11 +89,16 @@ class DataJoinTest {
     @Test
     void innerJoinForeignKey() {
 
-        fruit.forEach(fruitTable::onData);
-        grocers.forEach(grocerTable::onData);
+        DidoSubscriber fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                fruitTable, fruitTable.getSchema());
+        DidoSubscriber grocerSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                grocerTable, grocerTable.getSchema());
 
-        DataJoin<String> joined = DataJoin.from(fruitTable).foreignKey(
-                KeyExtractors.<String>fromNamed("GrocerId"))
+        fruit.forEach(fruitSubscriber::onData);
+        grocers.forEach(grocerSubscriber::onData);
+
+        DataJoin<String> joined = DataJoin.from(fruitTable)
+                .foreignKey(KeyUtil.<String>fromNamed(fruitTable.getSchema(), "GrocerId"))
                 .innerJoin(grocerTable);
 
         DataSchema expectedSchema = SchemaBuilder
@@ -115,7 +121,10 @@ class DataJoinTest {
     @Test
     void simpleLeftJoin() {
 
-        fruitTable.onData(fruit.get(1));
+        DidoSubscriber fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                fruitTable, fruitTable.getSchema());
+
+        fruitSubscriber.onData(fruit.get(1));
 
         DataSchema expectedSchema = SchemaBuilder
                 .builderFrom(fruitSchema)

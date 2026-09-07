@@ -1,13 +1,13 @@
 package dido.flow;
 
 import dido.data.DidoData;
-import dido.data.partial.PartialUpdate;
+import dido.data.partial.PartialData;
 
 public interface DidoSubscriber {
 
     void onData(DidoData data);
 
-    void onPartial(PartialUpdate partial);
+    void onPartial(PartialData partial);
 
     void onDelete(DidoData keyData);
 

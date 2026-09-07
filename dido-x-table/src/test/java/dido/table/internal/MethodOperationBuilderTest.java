@@ -3,7 +3,7 @@ package dido.table.internal;
 import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.IndexSequence;
-import dido.data.partial.PartialUpdate;
+import dido.data.partial.PartialData;
 import dido.flow.DidoSubscriber;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ class MethodOperationBuilderTest {
         }
 
         @Override
-        public void onPartial(PartialUpdate partial) {
+        public void onPartial(PartialData partial) {
             this.partial.add(partial.getData());
         }
 

@@ -3,11 +3,11 @@ package dido.elsewhere.ema;
 import com.refinitiv.ema.access.*;
 import com.refinitiv.ema.rdm.EmaRdm;
 import dido.data.DidoData;
-import dido.data.partial.PartialUpdate;
+import dido.data.partial.PartialData;
+import dido.flow.DidoSubscription;
+import dido.flow.KeyedDidoSubscriber;
 import dido.flow.QuietlyCloseable;
 import dido.table.DataTable;
-import dido.table.KeyedSubscriber;
-import dido.table.KeyedSubscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +55,7 @@ public class DidoIProviderClient implements OmmProviderClient {
             DidoToOmm didoToOmm = DidoToOmm.forSchema(dataTable.getSchema());
 
             DidoIProviderClient appClient = new DidoIProviderClient(didoToOmm, dataTable);
-            KeyedSubscription subscription = appClient.init();
+            DidoSubscription subscription = appClient.init();
 
             OmmIProviderConfig config = EmaFactory.createOmmIProviderConfig();
 
@@ -78,8 +78,8 @@ public class DidoIProviderClient implements OmmProviderClient {
         return new Settings();
     }
 
-    KeyedSubscription init() {
-        return dataTable.tableSubscribe(new DataForwarder());
+    DidoSubscription init() {
+        return dataTable.subscribe(new DataForwarder());
     }
 
     public void onReqMsg(ReqMsg reqMsg, OmmProviderEvent event) {
@@ -177,7 +177,7 @@ public class DidoIProviderClient implements OmmProviderClient {
     }
 
 
-    class DataForwarder implements KeyedSubscriber<String> {
+    class DataForwarder implements KeyedDidoSubscriber<String> {
 
         @Override
         public void onData(String key, DidoData data) {
@@ -191,7 +191,7 @@ public class DidoIProviderClient implements OmmProviderClient {
         }
 
         @Override
-        public void onPartial(String key, PartialUpdate data) {
+        public void onPartial(String key, PartialData partial) {
 
         }
 

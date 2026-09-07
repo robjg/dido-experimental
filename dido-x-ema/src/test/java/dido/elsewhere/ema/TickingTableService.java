@@ -2,12 +2,14 @@ package dido.elsewhere.ema;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialUpdateIndexed;
+import dido.data.FromValues;
+import dido.data.partial.PartialDataIndexed;
 import dido.table.DataTable;
 import dido.table.internal.DataTableBasic;
 import org.oddjob.framework.Service;
 
 import javax.inject.Inject;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -15,7 +17,6 @@ import java.util.concurrent.TimeUnit;
 public class TickingTableService implements Service {
 
     public static final DataSchema SCHEMA = DataSchema.builder()
-            .addNamed("SYMBOL", String.class)
             .addNamed("BID", double.class)
             .addNamed("ASK", double.class)
             .addNamed("BIDSIZE", int.class)
@@ -31,21 +32,20 @@ public class TickingTableService implements Service {
     @Override
     public void start() throws Exception {
 
-        DataTableBasic<String> tableBasic =DataTableBasic.<String>withSchema(SCHEMA)
-                .create();
+        DataTableBasic<String> tableBasic =DataTableBasic.forSchema(SCHEMA);
 
-        DidoData.withSchema(SCHEMA)
-                .many()
-                .of("IBM.N", 99.9, 100.1, 80, 90)
-                .of("APPL.OQ", 104.9, 105.1, 30, 20)
-                .of("MSFT.OQ", 79.9, 80.1, 110, 100)
-                .toStream().forEach(tableBasic::onData);
+        FromValues fromValues = DidoData.withSchema(SCHEMA);
+
+        Map.of(               "IBM.N", fromValues.of(99.9, 100.1, 80, 90),
+                "APPL.OQ", fromValues.of(104.9, 105.1, 30, 20),
+                "MSFT.OQ", fromValues.of( 79.9, 80.1, 110, 100))
+                        .forEach(tableBasic::onData);
 
         Wander ibmBid = new Wander(99.9);
 
         ScheduledFuture<?> future = executorService.scheduleAtFixedRate(() -> {
-            tableBasic.onPartial(PartialUpdateIndexed.of(
-                    DidoData.of("IBM.N", ibmBid.next(), 100.1, 80, 90), 2));
+            tableBasic.onPartial("IBM.N", PartialDataIndexed.of(
+                    DidoData.of(ibmBid.next(), 100.1, 80, 90), 1));
         }, 3, 3, TimeUnit.SECONDS);
 
         table = tableBasic;

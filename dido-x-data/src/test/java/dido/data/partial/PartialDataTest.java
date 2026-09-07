@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-class PartialUpdateTest {
+class PartialDataTest {
 
     DataSchema schema = DataSchema.builder()
             .addNamed("Id", String.class)
@@ -24,10 +24,10 @@ class PartialUpdateTest {
     @Test
     void make() {
 
-        PartialUpdate partialUpdate = PartialUpdate.from(fruit).withNames("Fruit", "Price");
+        PartialData partialData = PartialData.from(fruit).withNames("Fruit", "Price");
 
-        assertThat(partialUpdate.getIndices(), is(new int[] {2, 5}));
-        assertThat(partialUpdate.getData(), is(fruit));
+        assertThat(partialData.getIndices(), is(new int[] {2, 5}));
+        assertThat(partialData.getData(), is(fruit));
 
     }
 }

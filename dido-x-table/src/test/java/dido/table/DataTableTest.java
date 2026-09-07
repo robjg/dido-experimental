@@ -2,8 +2,12 @@ package dido.table;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.data.partial.PartialUpdate;
+import dido.data.partial.PartialData;
 import dido.data.schema.SubSchema;
+import dido.flow.DidoSubscriber;
+import dido.flow.DidoSubscription;
+import dido.flow.KeyedDidoSubscriber;
+import dido.flow.util.SubscriberUtil;
 import dido.table.internal.DataTableBasic;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +20,7 @@ import static org.hamcrest.Matchers.is;
 
 class DataTableTest {
 
-    static class Recorder implements KeyedSubscriber<Integer> {
+    static class Recorder implements KeyedDidoSubscriber<Integer> {
 
         List<String> results = new ArrayList<>();
 
@@ -26,7 +30,7 @@ class DataTableTest {
         }
 
         @Override
-        public void onPartial(Integer key, PartialUpdate partial) {
+        public void onPartial(Integer key, PartialData partial) {
             results.add("onPartial: " + partial);
         }
 
@@ -45,16 +49,18 @@ class DataTableTest {
                 .addNamed("Qty", int.class)
                 .build();
 
-        DataTableBasic<Integer> test = DataTableBasic.<Integer>withSchema(schema)
-                .create();
+        DataTableBasic<Integer> test = DataTableBasic.forSchema(schema);
 
         Recorder recorder = new Recorder();
 
-        KeyedSubscription subscription = test.tableSubscribe(recorder);
+        DidoSubscription subscription = test.subscribe(recorder);
 
         assertThat(subscription.getSchema(), is(schema));
 
-        test.onData(DidoData.withSchema(schema)
+         DidoSubscriber didoSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                 test, test.getSchema());
+
+        didoSubscriber.onData(DidoData.withSchema(schema)
                 .of(1, "Apple", 7));
 
         assertThat(recorder.results, contains("onData: {[1:Id]=1, [2:Fruit]=Apple, [3:Qty]=7}"));
@@ -62,13 +68,13 @@ class DataTableTest {
 
         DataSchema subSchema = SubSchema.from(schema).withNames("Id", "Qty");
 
-        test.onPartial(PartialUpdate.from(DidoData.withSchema(subSchema).of(1, 5))
+        didoSubscriber.onPartial(PartialData.from(DidoData.withSchema(subSchema).of(1, 5))
                 .withIndices(subSchema.getIndices()));
 
         assertThat(recorder.results, contains("onPartial: {[1:Id]=1, [3:Qty]=5}"));
         recorder.results.clear();
 
-        test.onDelete(DidoData.withSchema(SubSchema.from(schema).withIndices(1))
+        didoSubscriber.onDelete(DidoData.withSchema(SubSchema.from(schema).withIndices(1))
                 .of(1));
 
         assertThat(recorder.results, contains("onDelete: 1"));
