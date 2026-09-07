@@ -13,10 +13,7 @@ import dido.operators.Concatenator;
 import dido.table.CloseableTable;
 import dido.table.DataTable;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -160,6 +157,11 @@ public class DataJoin<K extends Comparable<K>>
     }
 
     @Override
+    public int size() {
+        return join.size();
+    }
+
+    @Override
     public boolean containsKey(K key) {
         return join.containsKey(key);
     }
@@ -193,6 +195,8 @@ public class DataJoin<K extends Comparable<K>>
     }
 
     interface View<K> extends QuietlyCloseable {
+
+        int size();
 
         boolean containsKey(K key);
 
@@ -260,6 +264,13 @@ public class DataJoin<K extends Comparable<K>>
                     }
                 }
             });
+        }
+
+        @Override
+        public int size() {
+            Set<K> working = new HashSet<K>(left.keySet());
+            working.retainAll(right.keySet());
+            return working.size();
         }
 
         @Override
@@ -362,6 +373,11 @@ public class DataJoin<K extends Comparable<K>>
                     }
                 }
             });
+        }
+
+        @Override
+        public int size() {
+            return left.size();
         }
 
         @Override

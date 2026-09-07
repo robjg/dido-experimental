@@ -38,6 +38,11 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Ke
     }
 
     @Override
+    public int size() {
+        return rows.size();
+    }
+
+    @Override
     public boolean containsKey(K key) {
         return rows.containsKey(key);
     }

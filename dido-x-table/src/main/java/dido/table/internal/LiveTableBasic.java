@@ -111,6 +111,11 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
     }
 
     @Override
+    public int size() {
+        return rows.size();
+    }
+
+    @Override
     public Set<K> keySet() {
         return rows.keySet();
     }
@@ -142,5 +147,10 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
     @Override
     public void close() {
 
+    }
+
+    @Override
+    public String toString() {
+        return "LiveTableBasic{size=" + rows.size() + '}';
     }
 }

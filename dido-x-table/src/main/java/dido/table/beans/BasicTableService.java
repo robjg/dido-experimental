@@ -8,12 +8,16 @@ import dido.flow.KeyedDataEvent;
 import dido.flow.KeyedDidoSubscriber;
 import dido.flow.util.KeyUtil;
 import dido.table.internal.DataTableBasic;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class BasicTableService<K extends Comparable<K>>
         implements KeyedDidoSubscriber<K>, Consumer<Object>, SchemaAware {
+
+    private static final Logger logger = LoggerFactory.getLogger(BasicTableService.class);
 
     private String name;
 
@@ -34,6 +38,8 @@ public class BasicTableService<K extends Comparable<K>>
 
     protected void initialise(DataSchema schema) {
 
+        logger.info("Initialising Table Service with schema: {}", schema);
+
         table = DataTableBasic.forSchema(schema);
 
         if (keyExtractor == null) {
@@ -51,6 +57,7 @@ public class BasicTableService<K extends Comparable<K>>
 
     public void stop() {
 
+        // nothing to do. Table won't be destroyed until reset.
     }
 
     public void reset() {
@@ -61,10 +68,6 @@ public class BasicTableService<K extends Comparable<K>>
 
     @Override
     public void accept(Object o) {
-
-        if (table == null) {
-            throw new IllegalStateException("Service not started");
-        }
 
         if (o instanceof DidoData data) {
             if (keyExtractor == null) {

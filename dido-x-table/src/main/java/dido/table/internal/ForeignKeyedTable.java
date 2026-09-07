@@ -110,6 +110,11 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
     }
 
     @Override
+    public int size() {
+        return otherTable.size();
+    }
+
+    @Override
     public boolean containsKey(K1 key) {
         K2 otherKey = mappingTo.get(key);
         if (otherKey == null) {

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<oddjob>
+    <job>
+        <bus:bus id="bus" xmlns:bus="oddjob:beanbus">
+            <of>
+                <dido:data-in xmlns:dido="oddjob:dido">
+                    <how>
+                        <dido:csv-in withHeader="true">
+                            <schema>
+                                <dido:schema>
+                                    <of>
+                                        <dido:field name="Fruit" type="java.lang.String"/>
+                                        <dido:field name="Qty" type="int"/>
+                                        <dido:field name="Price" type="double"/>
+                                    </of>
+                                </dido:schema>
+                            </schema>
+                        </dido:csv-in>
+                    </how>
+                    <from>
+                        <buffer><![CDATA[Fruit,Qty,Price
+Apple,5,27.2
+Orange,10,31.6
+Pear,7,22.1]]></buffer>
+                    </from>
+                </dido:data-in>
+                <dido:table id="table" xmlns:dido="oddjob:dido"/>
+            </of>
+        </bus:bus>
+    </job>
+</oddjob>

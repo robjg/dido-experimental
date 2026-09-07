@@ -11,6 +11,8 @@ public interface DataTable<K extends Comparable<K>> extends KeyedDidoPublisher<K
 
     DataSchema getSchema();
 
+    int size();
+
     Set<K> keySet();
 
     Set<Map.Entry<K, DidoData>> entrySet();
