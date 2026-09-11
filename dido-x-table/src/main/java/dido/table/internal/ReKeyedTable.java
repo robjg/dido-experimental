@@ -4,9 +4,9 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 import dido.flow.DidoSubscription;
-import dido.flow.KeyedDidoSubscriber;
+import dido.flow.KeyedDataConsumer;
 import dido.flow.QuietlyCloseable;
-import dido.flow.util.KeyedDidoDataSubscribers;
+import dido.flow.util.KeyedDataSubscribers;
 import dido.table.CloseableTable;
 import dido.table.DataTable;
 
@@ -30,13 +30,13 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
 
     private final DataTable<K2> otherTable;
 
-    private final KeyedDidoDataSubscribers<K1> subscribers;
+    private final KeyedDataSubscribers<K1> subscribers;
 
     private final List<QuietlyCloseable> closeables = new ArrayList<>();
 
     public ReKeyedTable(DataTable<K2> otherTable) {
         this.otherTable = otherTable;
-        subscribers = new KeyedDidoDataSubscribers<>(otherTable.getSchema());
+        subscribers = new KeyedDataSubscribers<>(otherTable.getSchema());
     }
 
     public static <K1 extends Comparable<K1>, K2 extends Comparable<K2>>
@@ -45,7 +45,7 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
 
         ReKeyedTable<K1, K2> table = new ReKeyedTable<>(existingTable);
 
-        KeyedDidoSubscriber<K2> existingSubscriber = new KeyedDidoSubscriber<>() {
+        KeyedDataConsumer<K2> existingSubscriber = new KeyedDataConsumer<>() {
             @Override
             public void onData(K2 other, DidoData data) {
                 K1 key = keyExtractor.apply(data);
@@ -138,8 +138,8 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
     }
 
     @Override
-    public DidoSubscription subscribe(KeyedDidoSubscriber<K1> listener) {
-        return subscribers.addSubscriber(listener);
+    public DidoSubscription subscribe(KeyedDataConsumer<? super K1> consumer) {
+        return subscribers.addSubscriber(consumer);
     }
 
     @Override

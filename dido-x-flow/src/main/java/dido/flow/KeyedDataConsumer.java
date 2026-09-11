@@ -7,7 +7,7 @@ import dido.data.partial.PartialData;
  * Something that can be attached to an
  * @param <K>
  */
-public interface KeyedDidoSubscriber<K> {
+public interface KeyedDataConsumer<K> {
 
     void onData(K key, DidoData data);
 

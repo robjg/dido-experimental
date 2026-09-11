@@ -2,7 +2,7 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.flow.DidoSubscriber;
+import dido.flow.DidoDataConsumer;
 import dido.flow.util.KeyUtil;
 import dido.flow.util.SubscriberUtil;
 import dido.table.CloseableTable;
@@ -46,10 +46,10 @@ class ForeignKeyedTableTest {
     @Test
     void existingTables() {
 
-        DidoSubscriber fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
-                fruitTable, fruitTable.getSchema());
-        DidoSubscriber grocerSubscriber  = SubscriberUtil.didoSubscriberFrom(
-                grocerTable, grocerTable.getSchema());
+        DidoDataConsumer fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                fruitTable, fruitSchema);
+        DidoDataConsumer grocerSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                grocerTable, grocerSchema);
 
         fruit.forEach(fruitSubscriber::onData);
         grocers.forEach(grocerSubscriber::onData);

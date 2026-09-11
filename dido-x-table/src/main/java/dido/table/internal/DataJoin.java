@@ -6,9 +6,9 @@ import dido.data.partial.IndexSequence;
 import dido.data.partial.PartialData;
 import dido.data.util.EmptyData;
 import dido.flow.DidoSubscription;
-import dido.flow.KeyedDidoSubscriber;
+import dido.flow.KeyedDataConsumer;
 import dido.flow.QuietlyCloseable;
-import dido.flow.util.KeyedDidoDataSubscribers;
+import dido.flow.util.KeyedDataSubscribers;
 import dido.operators.Concatenator;
 import dido.table.CloseableTable;
 import dido.table.DataTable;
@@ -26,7 +26,7 @@ public class DataJoin<K extends Comparable<K>>
     private static class LeftJoinToken {
     }
 
-    private final KeyedDidoDataSubscribers<K> subscribers;
+    private final KeyedDataSubscribers<K> subscribers;
 
     private final Concatenator concatenator;
 
@@ -54,7 +54,7 @@ public class DataJoin<K extends Comparable<K>>
 
         this.concatenator = Concatenator.fromSchemas(left.getSchema(), right.getSchema());
         this.additionalClosable = additionalClosable;
-        this.subscribers = new KeyedDidoDataSubscribers<>(concatenator.getSchema());
+        this.subscribers = new KeyedDataSubscribers<>(concatenator.getSchema());
     }
 
     private DataJoin(DataTable<K> left,
@@ -73,7 +73,7 @@ public class DataJoin<K extends Comparable<K>>
 
         this.concatenator = Concatenator.fromSchemas(left.getSchema(), right.getSchema());
         this.additionalClosable = additionalClosable;
-        this.subscribers = new KeyedDidoDataSubscribers<>(concatenator.getSchema());
+        this.subscribers = new KeyedDataSubscribers<>(concatenator.getSchema());
     }
 
     public static class From<K extends Comparable<K>> {
@@ -182,8 +182,8 @@ public class DataJoin<K extends Comparable<K>>
     }
 
     @Override
-    public DidoSubscription subscribe(KeyedDidoSubscriber<K> listener) {
-        return subscribers.addSubscriber(listener);
+    public DidoSubscription subscribe(KeyedDataConsumer<? super K> consumer) {
+        return subscribers.addSubscriber(consumer);
     }
 
     @Override
@@ -216,7 +216,7 @@ public class DataJoin<K extends Comparable<K>>
 
         InnerJoin() {
 
-            leftClose = left.subscribe(new KeyedDidoSubscriber<K>() {
+            leftClose = left.subscribe(new KeyedDataConsumer<K>() {
                 @Override
                 public void onData(K key, DidoData data) {
                     DidoData combined = get(key);
@@ -240,7 +240,7 @@ public class DataJoin<K extends Comparable<K>>
                     }
                 }
             });
-            rightClose = right.subscribe(new KeyedDidoSubscriber<>() {
+            rightClose = right.subscribe(new KeyedDataConsumer<>() {
                 @Override
                 public void onData(K key, DidoData data) {
                     DidoData combined = get(key);
@@ -319,7 +319,7 @@ public class DataJoin<K extends Comparable<K>>
 
         LeftJoin() {
 
-            leftClose = left.subscribe(new KeyedDidoSubscriber<K>() {
+            leftClose = left.subscribe(new KeyedDataConsumer<K>() {
                 @Override
                 public void onData(K key, DidoData data) {
                     subscribers.onData(key, get(key));
@@ -343,7 +343,7 @@ public class DataJoin<K extends Comparable<K>>
                     }
                 }
             });
-            rightClose = right.subscribe(new KeyedDidoSubscriber<K>() {
+            rightClose = right.subscribe(new KeyedDataConsumer<K>() {
                 @Override
                 public void onData(K key, DidoData data) {
                     DidoData combined = get(key);

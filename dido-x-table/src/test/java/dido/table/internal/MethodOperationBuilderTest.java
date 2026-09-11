@@ -4,7 +4,7 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.IndexSequence;
 import dido.data.partial.PartialData;
-import dido.flow.DidoSubscriber;
+import dido.flow.DidoDataConsumer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +16,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 class MethodOperationBuilderTest {
 
-    static class OurDidoSubscriber implements DidoSubscriber {
+    static class OurDidoSubscriber implements DidoDataConsumer {
 
         List<DidoData> data = new ArrayList<>();
 

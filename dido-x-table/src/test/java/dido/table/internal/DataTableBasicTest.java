@@ -4,9 +4,9 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 import dido.data.schema.SubSchema;
-import dido.flow.DidoSubscriber;
+import dido.flow.DidoDataConsumer;
 import dido.flow.QuietlyCloseable;
-import dido.flow.KeyedDidoSubscriber;
+import dido.flow.KeyedDataConsumer;
 import dido.flow.util.SubscriberUtil;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +18,7 @@ import static org.hamcrest.Matchers.*;
 
 class DataTableBasicTest {
 
-    static class Recorder implements KeyedDidoSubscriber<Integer> {
+    static class Recorder implements KeyedDataConsumer<Integer> {
 
         List<String> results = new ArrayList<>();
 
@@ -49,8 +49,8 @@ class DataTableBasicTest {
 
         DataTableBasic<Integer> test = DataTableBasic.forSchema(schema);
 
-        DidoSubscriber didoSubscriber  = SubscriberUtil.didoSubscriberFrom(
-                test, test.getSchema());
+        DidoDataConsumer didoSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                test, schema);
 
         DidoData.withSchema(schema).many()
                 .of(1, "Apple", 7)
@@ -90,8 +90,8 @@ class DataTableBasicTest {
 
         DataTableBasic<Integer> test = DataTableBasic.forSchema(schema);
 
-        DidoSubscriber didoSubscriber  = SubscriberUtil.didoSubscriberFrom(
-                test, test.getSchema());
+        DidoDataConsumer didoSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                test, schema);
 
         DidoData.withSchema(schema).many()
                 .of(1, "Apple", 7)

@@ -5,7 +5,7 @@ import dido.data.DidoData;
 import dido.data.partial.PartialData;
 import dido.data.schema.SchemaAware;
 import dido.flow.KeyedDataEvent;
-import dido.flow.KeyedDidoSubscriber;
+import dido.flow.KeyedDataConsumer;
 import dido.flow.util.KeyUtil;
 import dido.table.internal.DataTableBasic;
 import org.slf4j.Logger;
@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class BasicTableService<K extends Comparable<K>>
-        implements KeyedDidoSubscriber<K>, Consumer<Object>, SchemaAware {
+        implements KeyedDataConsumer<K>, Consumer<Object>, SchemaAware {
 
     private static final Logger logger = LoggerFactory.getLogger(BasicTableService.class);
 

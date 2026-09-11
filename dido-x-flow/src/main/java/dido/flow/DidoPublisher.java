@@ -7,11 +7,11 @@ import java.util.function.Consumer;
 
 public interface DidoPublisher {
 
-    DidoSubscription subscribe(DidoSubscriber subscriber);
+    DidoSubscription subscribe(DidoDataConsumer subscriber);
 
     default DidoSubscription subscribe(Consumer<? super DidoData> consumer) {
 
-        return subscribe(new DidoSubscriber() {
+        return subscribe(new DidoDataConsumer() {
             @Override
             public void onData(DidoData data) {
                 consumer.accept(data);

@@ -3,7 +3,7 @@ package dido.table.internal;
 import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.schema.SchemaBuilder;
-import dido.flow.DidoSubscriber;
+import dido.flow.DidoDataConsumer;
 import dido.flow.util.KeyUtil;
 import dido.flow.util.SubscriberUtil;
 import org.junit.jupiter.api.Test;
@@ -58,10 +58,10 @@ class DataJoinTest {
     @Test
     void simpleInnerJoin() {
 
-        DidoSubscriber fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
-                fruitTable, fruitTable.getSchema());
-        DidoSubscriber colourSubscriber  = SubscriberUtil.didoSubscriberFrom(
-                colourTable, colourTable.getSchema());
+        DidoDataConsumer fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                fruitTable, fruitSchema);
+        DidoDataConsumer colourSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                colourTable, colourSchema);
 
         fruit.forEach(fruitSubscriber::onData);
         colours.forEach(colourSubscriber::onData);
@@ -78,7 +78,7 @@ class DataJoinTest {
         DidoData f1 = joined.get("F1");
 
         assertThat(f1.getSchema(), is(expectedSchema));
-        assertThat(f1, is(DidoData.of("F1", "Apple", "G2", 5, "F1", "Green")));
+        assertThat(f1, is(DidoData.of("F1", "Apple", "G2", 5.0, "F1", "Green")));
         assertThat(joined.containsKey("F2"), is(true));
         assertThat(joined.containsKey("F3"), is(false));
         assertThat(joined.get("F3"), nullValue());
@@ -89,10 +89,10 @@ class DataJoinTest {
     @Test
     void innerJoinForeignKey() {
 
-        DidoSubscriber fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
-                fruitTable, fruitTable.getSchema());
-        DidoSubscriber grocerSubscriber  = SubscriberUtil.didoSubscriberFrom(
-                grocerTable, grocerTable.getSchema());
+        DidoDataConsumer fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                fruitTable, fruitSchema);
+        DidoDataConsumer grocerSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                grocerTable, grocerSchema);
 
         fruit.forEach(fruitSubscriber::onData);
         grocers.forEach(grocerSubscriber::onData);
@@ -110,10 +110,10 @@ class DataJoinTest {
         DidoData f1 = joined.get("F1");
 
         assertThat(f1.getSchema(), is(expectedSchema));
-        assertThat(f1, is(DidoData.of("F1", "Apple", "G2", 5, "G2", "Smith")));
+        assertThat(f1, is(DidoData.of("F1", "Apple", "G2", 5.0, "G2", "Smith")));
         assertThat(joined.containsKey("F2"), is(true));
         assertThat(joined.containsKey("F3"), is(true));
-        assertThat(joined.get("F3"), is(DidoData.of("F3", "Orange", "G1", 2, "G1", "Jones")));
+        assertThat(joined.get("F3"), is(DidoData.of("F3", "Orange", "G1", 2.0, "G1", "Jones")));
 
         joined.close();
     }
@@ -121,8 +121,8 @@ class DataJoinTest {
     @Test
     void simpleLeftJoin() {
 
-        DidoSubscriber fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
-                fruitTable, fruitTable.getSchema());
+        DidoDataConsumer fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                fruitTable, fruitSchema);
 
         fruitSubscriber.onData(fruit.get(1));
 
@@ -140,7 +140,7 @@ class DataJoinTest {
         DidoData f2 = joined.get("F2");
 
         assertThat(f2.getSchema(), is(expectedSchema));
-        assertThat(f2, is(DidoData.of("F2", "Banana", "G2", 3, null, null)));
+        assertThat(f2, is(DidoData.of("F2", "Banana", "G2", 3.0, null, null)));
 
         joined.close();
     }

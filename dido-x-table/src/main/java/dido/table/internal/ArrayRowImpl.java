@@ -6,7 +6,7 @@ import dido.data.NoSuchFieldException;
 import dido.data.partial.IndexSequence;
 import dido.data.partial.PartialData;
 import dido.data.useful.AbstractData;
-import dido.flow.DidoSubscriber;
+import dido.flow.DidoDataConsumer;
 import dido.table.LiveRow;
 import dido.table.LiveValue;
 
@@ -18,12 +18,12 @@ public class ArrayRowImpl implements LiveRow {
 
     private final DataSchema schema;
 
-    private final DidoSubscriber didoSubscriber;
+    private final DidoDataConsumer didoSubscriber;
 
     private final ObjectLiveValue[] values;
 
     public ArrayRowImpl(DataSchema schema,
-                        DidoSubscriber didoSubscriber) {
+                        DidoDataConsumer didoSubscriber) {
         this.schema = schema;
         this.didoSubscriber = didoSubscriber;
         values = new ObjectLiveValue[schema.lastIndex()];

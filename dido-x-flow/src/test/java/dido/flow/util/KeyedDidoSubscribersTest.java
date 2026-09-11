@@ -1,10 +1,9 @@
-package dido.table.util;
+package dido.flow.util;
 
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 import dido.flow.QuietlyCloseable;
-import dido.flow.KeyedDidoSubscriber;
-import dido.flow.util.KeyedDidoDataSubscribers;
+import dido.flow.KeyedDataConsumer;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -15,7 +14,7 @@ import static org.hamcrest.Matchers.contains;
 
 class KeyedDidoSubscribersTest {
 
-    static class OurDidoSubscriber implements KeyedDidoSubscriber<Integer> {
+    static class OurDidoSubscriber implements KeyedDataConsumer<Integer> {
 
         List<String> results = new ArrayList<>();
 
@@ -40,7 +39,7 @@ class KeyedDidoSubscribersTest {
 
         DidoData apple = DidoData.of("Apple");
 
-        KeyedDidoDataSubscribers<Integer> test = new KeyedDidoDataSubscribers<>(apple.getSchema());
+        KeyedDataSubscribers<Integer> test = new KeyedDataSubscribers<>(apple.getSchema());
 
         test.onData(1, apple);
         test.onPartial(1, PartialData.from(apple).withIndices(1));

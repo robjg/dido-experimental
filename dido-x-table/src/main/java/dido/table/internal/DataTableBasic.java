@@ -6,26 +6,31 @@ import dido.data.DidoData;
 import dido.data.mutable.MutableArrayData;
 import dido.data.mutable.MutableData;
 import dido.data.partial.PartialData;
-import dido.flow.DidoSubscription;
-import dido.flow.KeyedDidoSubscriber;
-import dido.flow.util.KeyedDidoDataSubscribers;
+import dido.flow.*;
+import dido.flow.util.KeySubscribers;
+import dido.flow.util.KeyedDataSubscribers;
 import dido.table.DataTable;
+import dido.table.util.MutableDataHelper;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, KeyedDidoSubscriber<K> {
+public class DataTableBasic<K extends Comparable<K>>
+        implements DataTable<K>, Keyed<K>, KeyedDataConsumer<K> {
 
-    private final DataSchema schema;
+    private final MutableDataHelper dataHelper;
 
-    private final Map<K, MutableData> rows = new TreeMap<>();
+    private final Map<K, MutableArrayData> rows = new TreeMap<>();
 
-    private final KeyedDidoDataSubscribers<K> subscribers;
+    private final KeyedDataSubscribers<K> dataSubscribers;
 
-    DataTableBasic(DataSchema schema) {
-        this.schema = schema;
-        this.subscribers = new KeyedDidoDataSubscribers<>(schema);
+    private final KeySubscribers<K> keySubscribers;
+
+    DataTableBasic(DataSchema fromSchema) {
+        this.dataHelper = MutableDataHelper.forSchema(fromSchema);
+        this.dataSubscribers = new KeyedDataSubscribers<>(fromSchema);
+        this.keySubscribers = new KeySubscribers<>();
     }
 
     public static <K extends Comparable<K>> DataTableBasic<K> forSchema(DataSchema schema) {
@@ -34,7 +39,7 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Ke
 
     @Override
     public DataSchema getSchema() {
-        return schema;
+        return dataHelper.getSchema();
     }
 
     @Override
@@ -64,17 +69,27 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Ke
     }
 
     @Override
-    public DidoSubscription subscribe(KeyedDidoSubscriber<K> listener) {
-        return subscribers.addSubscriber(listener);
+    public QuietlyCloseable keySubscribe(KeyConsumer<? super K> keyConsumer) {
+        return keySubscribers.addKeySubscriber(keyConsumer);
+    }
+
+    @Override
+    public DidoSubscription subscribe(KeyedDataConsumer<? super K> consumer) {
+        return dataSubscribers.addSubscriber(consumer);
     }
 
     @Override
     public void onData(K key, DidoData data) {
 
-        MutableData row = rows.computeIfAbsent(key,
-                k -> MutableArrayData.copy(data));
-
-        subscribers.onData(key, row);
+        MutableArrayData row = rows.get(key);
+        if (row == null) {
+            row = dataHelper.copy(data);
+            rows.put(key, row);
+        }
+        else {
+            dataHelper.update(data, row);
+        }
+        dataSubscribers.onData(key, row);
     }
 
     @Override
@@ -96,7 +111,7 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Ke
             }
         }
 
-        subscribers.onPartial(key, PartialData.of(row, partial.getIndices()));
+        dataSubscribers.onPartial(key, PartialData.of(row, partial.getIndices()));
     }
 
     @Override
@@ -107,6 +122,6 @@ public class DataTableBasic<K extends Comparable<K>> implements DataTable<K>, Ke
             throw new IllegalArgumentException("No row for key " + key);
         }
 
-        subscribers.onDelete(key);
+        dataSubscribers.onDelete(key);
     }
 }

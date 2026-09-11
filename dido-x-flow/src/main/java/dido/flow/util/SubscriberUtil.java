@@ -10,16 +10,16 @@ import java.util.function.Function;
 public class SubscriberUtil {
 
 
-    public static <K> DidoSubscriber didoSubscriberFrom(KeyedDidoSubscriber<K> keyedDataSubscriber,
-                                                        DataSchema schema) {
+    public static <K> DidoDataConsumer didoSubscriberFrom(KeyedDataConsumer<K> keyedDataSubscriber,
+                                                          DataSchema schema) {
         return didoSubscriberFrom(keyedDataSubscriber,
                 KeyUtil.fromFirstField(schema));
     }
 
-    public static <K> DidoSubscriber didoSubscriberFrom(KeyedDidoSubscriber<K> keyedDataSubscriber,
-                                                        Function<? super DidoData, ? extends K> keyExtractor) {
+    public static <K> DidoDataConsumer didoSubscriberFrom(KeyedDataConsumer<K> keyedDataSubscriber,
+                                                          Function<? super DidoData, ? extends K> keyExtractor) {
 
-        return new DidoSubscriber() {
+        return new DidoDataConsumer() {
             @Override
             public void onData(DidoData data) {
 
@@ -48,15 +48,15 @@ public class SubscriberUtil {
         };
     }
 
-    public static <K> DidoPublisher didoPublisherFrom(KeyedDidoPublisher<K> keyedPublisher,
+    public static <K> DidoPublisher didoPublisherFrom(KeyedDataPublisher<K> keyedPublisher,
                                                       Function<? super K, ? extends DidoData> keyComposer) {
 
         return new DidoPublisher() {
 
             @Override
-            public DidoSubscription subscribe(DidoSubscriber subscriber) {
+            public DidoSubscription subscribe(DidoDataConsumer subscriber) {
 
-                KeyedDidoSubscriber<K> keyedSubscriber = new KeyedDidoSubscriber<K>() {
+                KeyedDataConsumer<K> keyedSubscriber = new KeyedDataConsumer<K>() {
                     @Override
                     public void onData(K key, DidoData data) {
                         subscriber.onData(data);

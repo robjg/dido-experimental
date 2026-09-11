@@ -3,10 +3,10 @@ package dido.table.internal;
 import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
-import dido.flow.DidoSubscriber;
+import dido.flow.DidoDataConsumer;
 import dido.flow.DidoSubscription;
-import dido.flow.KeyedDidoSubscriber;
-import dido.flow.util.KeyedDidoDataSubscribers;
+import dido.flow.KeyedDataConsumer;
+import dido.flow.util.KeyedDataSubscribers;
 import dido.operators.transform.OperationDefinition;
 import dido.table.LiveRow;
 import dido.table.LiveTable;
@@ -22,14 +22,14 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
 
     private final LiveOperation ops;
 
-    private final KeyedDidoDataSubscribers<K> subscribers;
+    private final KeyedDataSubscribers<K> subscribers;
 
-    private final List<DidoSubscriber> didoSubscribers = new ArrayList<>();
+    private final List<DidoDataConsumer> didoSubscribers = new ArrayList<>();
 
     private LiveTableBasic(Settings<K> settings) {
         this.ops = settings.operationBuilder.build();
         this.schema = ops.getOutSchema();
-        this.subscribers = new KeyedDidoDataSubscribers<>(schema);
+        this.subscribers = new KeyedDataSubscribers<>(schema);
     }
 
     public static class Settings<K extends Comparable<K>> {
@@ -55,7 +55,7 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
         return new Settings<>(schema);
     }
 
-    class InternalDidoSubscriber implements DidoSubscriber {
+    class InternalDidoDataConsumer implements DidoDataConsumer {
 
         @Override
         public void onData(DidoData data) {
@@ -77,7 +77,7 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
     public void onData(K key, DidoData data) {
 
         ArrayRowImpl arrayRow = rows.computeIfAbsent(key,
-                k -> new ArrayRowImpl(schema, new InternalDidoSubscriber()));
+                k -> new ArrayRowImpl(schema, new InternalDidoDataConsumer()));
 
         arrayRow.onData(data, ops);
         ops.accept(arrayRow);
@@ -140,8 +140,8 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
     }
 
     @Override
-    public DidoSubscription subscribe(KeyedDidoSubscriber<K> listener) {
-        return subscribers.addSubscriber(listener);
+    public DidoSubscription subscribe(KeyedDataConsumer<? super K> consumer) {
+        return subscribers.addSubscriber(consumer);
     }
 
     @Override

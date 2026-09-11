@@ -1,16 +1,16 @@
 package dido.elsewhere.ema;
 
 import com.refinitiv.ema.access.*;
+import com.refinitiv.ema.rdm.DataDictionary;
 import com.refinitiv.ema.rdm.EmaRdm;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
-import dido.flow.DidoSubscription;
-import dido.flow.KeyedDidoSubscriber;
-import dido.flow.QuietlyCloseable;
+import dido.flow.*;
 import dido.table.DataTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -38,26 +38,28 @@ public class DidoIProviderClient implements OmmProviderClient {
 
         private int port;
 
-        private DataTable<String> dataTable;
+        private Path dictionaryDir;
 
         public Settings port(int port) {
             this.port = port;
             return this;
         }
 
-        public Settings dataTable(DataTable<String> dataTable) {
-            this.dataTable = dataTable;
-            return this;
-        }
-
-        public QuietlyCloseable create() {
+        public QuietlyCloseable from(DataTable<String> dataTable) {
 
             DidoToOmm didoToOmm = DidoToOmm.forSchema(dataTable.getSchema());
+
+            if (dictionaryDir != null) {
+                DataDictionary dictionary = EmaFactory.createDataDictionary();
+                dictionary.loadFieldDictionary("./RDMFieldDictionary");
+                dictionary.loadEnumTypeDictionary("./enumtype.def");
+            }
 
             DidoIProviderClient appClient = new DidoIProviderClient(didoToOmm, dataTable);
             DidoSubscription subscription = appClient.init();
 
             OmmIProviderConfig config = EmaFactory.createOmmIProviderConfig();
+
 
             logger.info("Creating config {}", config);
 
@@ -177,7 +179,7 @@ public class DidoIProviderClient implements OmmProviderClient {
     }
 
 
-    class DataForwarder implements KeyedDidoSubscriber<String> {
+    class DataForwarder implements KeyedDataConsumer<String> {
 
         @Override
         public void onData(String key, DidoData data) {

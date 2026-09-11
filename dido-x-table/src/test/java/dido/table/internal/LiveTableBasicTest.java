@@ -3,7 +3,7 @@ package dido.table.internal;
 import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.schema.SchemaBuilder;
-import dido.flow.DidoSubscriber;
+import dido.flow.DidoDataConsumer;
 import dido.flow.util.SubscriberUtil;
 import dido.operators.transform.BasicOperations;
 import dido.operators.transform.ValueGetter;
@@ -27,7 +27,7 @@ class LiveTableBasicTest {
 
         LiveTable<Integer> table = LiveTableBasic.<Integer>forSchema(schema).create();
 
-        DidoSubscriber didoSubscriber = SubscriberUtil.didoSubscriberFrom(table, table.getSchema());
+        DidoDataConsumer didoSubscriber = SubscriberUtil.didoSubscriberFrom(table, table.getSchema());
 
         DidoData.withSchema(schema).many()
                 .of(5, "Apple")
@@ -70,13 +70,13 @@ class LiveTableBasicTest {
 
         assertThat(table.getSchema(), is(expectedSchema));
 
-        DidoSubscriber didoSubscriber = SubscriberUtil.didoSubscriberFrom(table, table.getSchema());
+        DidoDataConsumer didoDataConsumer = SubscriberUtil.didoSubscriberFrom(table, table.getSchema());
 
         DidoData.withSchema(schema).many()
                 .of(5, "Apple", 20.0)
                 .of(8, "Pear", 30.0)
                 .of(3, "Banana", 25.0)
-                .toList().forEach(didoSubscriber::onData);
+                .toList().forEach(didoDataConsumer::onData);
 
         LiveRow row = table.getRow(5);
 

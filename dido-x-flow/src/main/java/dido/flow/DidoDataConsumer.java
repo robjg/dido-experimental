@@ -3,7 +3,7 @@ package dido.flow;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 
-public interface DidoSubscriber {
+public interface DidoDataConsumer {
 
     void onData(DidoData data);
 

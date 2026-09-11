@@ -2,7 +2,7 @@ package dido.table.internal;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.flow.DidoSubscriber;
+import dido.flow.DidoDataConsumer;
 import dido.flow.util.KeyUtil;
 import dido.flow.util.SubscriberUtil;
 import dido.table.CloseableTable;
@@ -35,8 +35,8 @@ class ReKeyedTableTest {
     @Test
     void existingTables() {
 
-        DidoSubscriber fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
-                fruitTable, fruitTable.getSchema());
+        DidoDataConsumer fruitSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                fruitTable, fruitSchema);
 
         fruit.forEach(fruitSubscriber::onData);
 

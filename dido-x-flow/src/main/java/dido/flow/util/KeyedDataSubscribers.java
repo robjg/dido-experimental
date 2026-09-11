@@ -4,28 +4,28 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 import dido.flow.DidoSubscription;
-import dido.flow.KeyedDidoSubscriber;
+import dido.flow.KeyedDataConsumer;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class KeyedDidoDataSubscribers<K extends Comparable<K>> implements KeyedDidoSubscriber<K> {
+public class KeyedDataSubscribers<K extends Comparable<K>> implements KeyedDataConsumer<K> {
 
     private final DataSchema schema;
 
-    private KeyedDidoSubscriber<? super K> existing;
+    private KeyedDataConsumer<? super K> existing;
 
-    public KeyedDidoDataSubscribers(DataSchema schema) {
+    public KeyedDataSubscribers(DataSchema schema) {
         this.schema = schema;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public DidoSubscription addSubscriber(KeyedDidoSubscriber<? super K> additional) {
+    public DidoSubscription addSubscriber(KeyedDataConsumer<? super K> additional) {
 
         if (existing == null) {
             existing = additional;
         }
-        else if (existing instanceof KeyedDidoDataSubscribers.DidoSubscriberList keyedDataSubscribers) {
+        else if (existing instanceof DidoSubscriberList keyedDataSubscribers) {
             keyedDataSubscribers.consumers.add(additional);
         }
         else {
@@ -70,10 +70,10 @@ public class KeyedDidoDataSubscribers<K extends Comparable<K>> implements KeyedD
         }
     }
 
-    void remove(KeyedDidoSubscriber<? super K> subscriber) {
+    void remove(KeyedDataConsumer<? super K> subscriber) {
         if (existing == subscriber) {
             existing = null;
-        } else if (existing instanceof KeyedDidoDataSubscribers.DidoSubscriberList<? super K> list) {
+        } else if (existing instanceof DidoSubscriberList<? super K> list) {
             list.consumers.remove(subscriber);
             if (list.consumers.size() == 1) {
                 existing = list.consumers.getFirst();
@@ -81,9 +81,9 @@ public class KeyedDidoDataSubscribers<K extends Comparable<K>> implements KeyedD
         }
     }
 
-    static class DidoSubscriberList<K extends Comparable<K>> implements KeyedDidoSubscriber<K> {
+    static class DidoSubscriberList<K> implements KeyedDataConsumer<K> {
 
-        private final List<KeyedDidoSubscriber<? super K>> consumers = new ArrayList<>();
+        private final List<KeyedDataConsumer<? super K>> consumers = new ArrayList<>();
 
         @Override
         public void onData(K key, DidoData data) {

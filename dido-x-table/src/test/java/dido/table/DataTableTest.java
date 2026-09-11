@@ -4,9 +4,9 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 import dido.data.schema.SubSchema;
-import dido.flow.DidoSubscriber;
+import dido.flow.DidoDataConsumer;
 import dido.flow.DidoSubscription;
-import dido.flow.KeyedDidoSubscriber;
+import dido.flow.KeyedDataConsumer;
 import dido.flow.util.SubscriberUtil;
 import dido.table.internal.DataTableBasic;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ import static org.hamcrest.Matchers.is;
 
 class DataTableTest {
 
-    static class Recorder implements KeyedDidoSubscriber<Integer> {
+    static class Recorder implements KeyedDataConsumer<Integer> {
 
         List<String> results = new ArrayList<>();
 
@@ -57,8 +57,8 @@ class DataTableTest {
 
         assertThat(subscription.getSchema(), is(schema));
 
-         DidoSubscriber didoSubscriber  = SubscriberUtil.didoSubscriberFrom(
-                 test, test.getSchema());
+         DidoDataConsumer didoSubscriber  = SubscriberUtil.didoSubscriberFrom(
+                 test, schema);
 
         didoSubscriber.onData(DidoData.withSchema(schema)
                 .of(1, "Apple", 7));

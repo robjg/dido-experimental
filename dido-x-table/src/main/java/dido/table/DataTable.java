@@ -2,12 +2,13 @@ package dido.table;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.flow.KeyedDidoPublisher;
+import dido.flow.KeyedDataPublisher;
 
 import java.util.Map;
 import java.util.Set;
 
-public interface DataTable<K extends Comparable<K>> extends KeyedDidoPublisher<K> {
+public interface DataTable<K extends Comparable<K>>
+        extends KeyedDataPublisher<K> {
 
     DataSchema getSchema();
 

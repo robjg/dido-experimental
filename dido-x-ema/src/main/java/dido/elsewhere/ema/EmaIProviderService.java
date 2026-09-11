@@ -19,15 +19,15 @@ public class EmaIProviderService {
 
     private DataTable<String> table;
 
+    private String dictionaryDir;
+
     public void start() {
 
         close = DidoIProviderClient
                 .with()
                 .port(port)
-                .dataTable(Objects.requireNonNull(
-                        table, "Data Table Required"))
-                .create();
-
+                .from(Objects.requireNonNull(
+                        table, "Data Table Required"));
     }
 
     public void stop() {
