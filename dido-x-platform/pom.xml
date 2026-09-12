@@ -14,6 +14,8 @@
 
     <modules>
         <module>dido-x-platform-api</module>
+        <module>dido-x-platform-util</module>
+        <module>dido-x-platform-local</module>
     </modules>
 
     <properties>
@@ -22,6 +24,35 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencyManagement>
 
+        <dependencies>
+
+            <dependency>
+                <groupId>uk.co.rgordon</groupId>
+                <artifactId>dido-data</artifactId>
+                <version>${dido.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>uk.co.rgordon</groupId>
+                <artifactId>dido-x-platform-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>uk.co.rgordon</groupId>
+                <artifactId>dido-x-platform-util</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>uk.co.rgordon</groupId>
+                <artifactId>dido-x-platform-local</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+
+    </dependencyManagement>
 
 </project>

@@ -9,24 +9,4 @@ public interface DidoPublisher {
 
     DidoSubscription subscribe(DidoDataConsumer subscriber);
 
-    default DidoSubscription subscribe(Consumer<? super DidoData> consumer) {
-
-        return subscribe(new DidoDataConsumer() {
-            @Override
-            public void onData(DidoData data) {
-                consumer.accept(data);
-            }
-
-            @Override
-            public void onPartial(PartialData partial) {
-
-                // doesn't work conceptionally....
-            }
-
-            @Override
-            public void onDelete(DidoData keyData) {
-                // Do we need the concept of deleted data?
-            }
-        });
-    }
 }

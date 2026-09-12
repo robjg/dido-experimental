@@ -9,7 +9,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>dido-x-platform-api</artifactId>
+    <artifactId>dido-x-platform-local</artifactId>
 
     <dependencies>
 
@@ -20,12 +20,27 @@
 
         <dependency>
             <groupId>uk.co.rgordon</groupId>
+            <artifactId>dido-operators</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>uk.co.rgordon</groupId>
             <artifactId>dido-x-data</artifactId>
         </dependency>
 
         <dependency>
             <groupId>uk.co.rgordon</groupId>
             <artifactId>dido-x-flow</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>uk.co.rgordon</groupId>
+            <artifactId>dido-x-platform-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>uk.co.rgordon</groupId>
+            <artifactId>dido-x-platform-util</artifactId>
         </dependency>
 
         <dependency>

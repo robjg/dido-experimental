@@ -9,7 +9,13 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>dido-x-platform-api</artifactId>
+    <artifactId>dido-x-platform-util</artifactId>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
     <dependencies>
 
@@ -20,12 +26,7 @@
 
         <dependency>
             <groupId>uk.co.rgordon</groupId>
-            <artifactId>dido-x-data</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>uk.co.rgordon</groupId>
-            <artifactId>dido-x-flow</artifactId>
+            <artifactId>dido-operators</artifactId>
         </dependency>
 
         <dependency>
@@ -47,4 +48,6 @@
         </dependency>
 
     </dependencies>
+
+
 </project>
