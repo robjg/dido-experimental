@@ -1,26 +1,18 @@
 package dido.table.util;
 
-import dido.data.DataSchema;
-import dido.data.DidoData;
-import dido.data.FromValues;
-import dido.data.WriteSchema;
+import dido.data.*;
 import dido.data.mutable.MutableArrayData;
 
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 public class MutableDataHelper {
 
-    private final WriteSchema writeSchema;
-
-    private final Function<DidoData, DidoData> copyFunction;
+    private final DidoTransform copyFunction;
 
     private final BiFunction<DidoData, MutableArrayData, int[]> updateFunction;
 
-    private MutableDataHelper(WriteSchema writeSchema,
-                              Function<DidoData, DidoData> copyFunction,
+    private MutableDataHelper(DidoTransform copyFunction,
                               BiFunction<DidoData, MutableArrayData, int[]> updateFunction) {
-        this.writeSchema = writeSchema;
         this.copyFunction = copyFunction;
         this.updateFunction = updateFunction;
     }
@@ -34,12 +26,12 @@ public class MutableDataHelper {
 
         FromValues fromValues = MutableArrayData.withSchema(toSchema);
 
-        return new MutableDataHelper(toSchema,
-                fromValues.toCopyFunction(fromSchema), updateFunction);
+        return new MutableDataHelper(fromValues.toCopyFunction(fromSchema),
+                updateFunction);
     }
 
     public DataSchema getSchema() {
-        return writeSchema;
+        return copyFunction.getSchema();
     }
 
     public MutableArrayData copy(DidoData didoData) {

@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 public class DataTableBasic<K extends Comparable<K>>
-        implements DataTable<K>, Keyed<K>, KeyedDataConsumer<K> {
+        implements DataTable<K>, KeyPublisher<K>, KeyedDataConsumer<K> {
 
     private final MutableDataHelper dataHelper;
 
@@ -69,7 +69,7 @@ public class DataTableBasic<K extends Comparable<K>>
     }
 
     @Override
-    public QuietlyCloseable keySubscribe(KeyConsumer<? super K> keyConsumer) {
+    public QuietlyCloseable subscribeKeyAvailability(KeyConsumer<? super K> keyConsumer) {
         return keySubscribers.addKeySubscriber(keyConsumer);
     }
 
@@ -85,6 +85,7 @@ public class DataTableBasic<K extends Comparable<K>>
         if (row == null) {
             row = dataHelper.copy(data);
             rows.put(key, row);
+            keySubscribers.onAvailable(key);
         }
         else {
             dataHelper.update(data, row);
@@ -121,7 +122,7 @@ public class DataTableBasic<K extends Comparable<K>>
         if (row == null) {
             throw new IllegalArgumentException("No row for key " + key);
         }
-
+        keySubscribers.onRemoved(key);
         dataSubscribers.onDelete(key);
     }
 }

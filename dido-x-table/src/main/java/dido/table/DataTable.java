@@ -7,7 +7,7 @@ import dido.flow.KeyedDataPublisher;
 import java.util.Map;
 import java.util.Set;
 
-public interface DataTable<K extends Comparable<K>>
+public interface DataTable<K>
         extends KeyedDataPublisher<K> {
 
     DataSchema getSchema();

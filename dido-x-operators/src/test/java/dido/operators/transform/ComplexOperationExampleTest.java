@@ -2,6 +2,7 @@ package dido.operators.transform;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
+import dido.data.DidoTransform;
 import dido.data.immutable.ArrayData;
 import dido.data.schema.SchemaBuilder;
 import org.junit.jupiter.api.Test;

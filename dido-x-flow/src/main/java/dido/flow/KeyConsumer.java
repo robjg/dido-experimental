@@ -2,7 +2,7 @@ package dido.flow;
 
 public interface KeyConsumer<K> {
 
-    void onInsert(K key);
+    void onAvailable(K key);
 
-    void onDelete(K key);
+    void onRemoved(K key);
 }

@@ -1,12 +1,17 @@
 package dido.elsewhere.ema;
 
-import com.refinitiv.ema.access.*;
 import dido.data.DataSchema;
-import dido.table.internal.DataTableBasic;
+import dido.data.immutable.NonBoxedDataFactoryProvider;
+import dido.flow.KeyConsumer;
+import dido.flow.KeyPublisher;
+import dido.flow.QuietlyCloseable;
+import dido.table.internal.ConcurrentTableBasic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 public class EmaConsumerService {
 
@@ -18,99 +23,45 @@ public class EmaConsumerService {
 
     private String serviceName;
 
+    private Path dictionaryDir;
+
     private List<String> symbols;
 
-    private DataTableBasic<String> table;
+    private ConcurrentTableBasic<String> table;
 
     private DataSchema schema;
 
-    private Runnable close;
-
-    class AppClient implements OmmConsumerClient {
-
-        DidoOmmData didoOmmData;
-
-
-        public void onRefreshMsg(RefreshMsg refreshMsg, OmmConsumerEvent event) {
-
-            logger.debug("onRefreshMsg: {}", refreshMsg);
-
-            if (DataType.DataTypes.FIELD_LIST == refreshMsg.payload().dataType()) {
-
-                FieldList fieldList = refreshMsg.payload().fieldList();
-                didoOmmData = DidoOmmData.of(fieldList);
-
-                table.onData(refreshMsg.name(), didoOmmData.data(fieldList));
-            }
-            else {
-                logger.warn("onRefreshMsg: unsupported data type");
-            }
-
-
-        }
-
-        public void onUpdateMsg(UpdateMsg updateMsg, OmmConsumerEvent event) {
-
-            logger.debug("onUpdateMsg: {}", updateMsg);
-
-            if (DataType.DataTypes.FIELD_LIST == updateMsg.payload().dataType()) {
-
-                FieldList fieldList = updateMsg.payload().fieldList();
-
-                table.onPartial(updateMsg.name(), didoOmmData.partial(fieldList));
-            }
-            else {
-                logger.warn("onUpdateMsg: unsupported data type");
-            }
-
-            System.out.println(updateMsg);
-        }
-
-        public void onStatusMsg(StatusMsg statusMsg, OmmConsumerEvent event) {
-            System.out.println(statusMsg);
-        }
-
-        public void onGenericMsg(GenericMsg genericMsg, OmmConsumerEvent consumerEvent) {
-        }
-
-        public void onAckMsg(AckMsg ackMsg, OmmConsumerEvent consumerEvent) {
-        }
-
-        public void onAllMsg(Msg msg, OmmConsumerEvent consumerEvent) {
-        }
-    }
+    private QuietlyCloseable close;
 
     public void start() {
 
         logger.info("Starting EmaConsumerService for host: {} and symbols: {}",
                 host, symbols);
 
-        this.table = DataTableBasic.forSchema(schema);
+        this.table = ConcurrentTableBasic.create(schema,
+                new NonBoxedDataFactoryProvider());
 
-        OmmConsumerConfig config = EmaFactory.createOmmConsumerConfig();
+        List<String> symbols = Objects.requireNonNull(this.symbols);
 
-        OmmConsumer consumer = EmaFactory.createOmmConsumer(
-                config.host(host)
-                        .username("user"));
-
-        for (String symbol : symbols) {
-
-            AppClient appClient = new AppClient();
-
-            ReqMsg reqMsg = EmaFactory.createReqMsg();
-
-            consumer.registerClient(reqMsg.serviceName(serviceName)
-                    .name(symbol), appClient);
-        }
-
-        close = () -> {
-            consumer.uninitialize();
-            table = null;
+        KeyPublisher<String> keyAvailability = new KeyPublisher<String>() {
+            @Override
+            public QuietlyCloseable subscribeKeyAvailability(KeyConsumer<? super String> keyConsumer) {
+                symbols.forEach(keyConsumer::onAvailable);
+                return () -> {};
+            }
         };
+
+        this.close = DidoOmmConsumer.with()
+                .host(host)
+                .serviceName(serviceName)
+                .dictionaryDir(dictionaryDir)
+                .keyAvailability(keyAvailability)
+                .to(table);
+
     }
 
     public void stop() {
-        close.run();
+        close.close();
     }
 
     public String getName() {
@@ -137,6 +88,8 @@ public class EmaConsumerService {
         this.serviceName = serviceName;
     }
 
+
+
     public List<String> getSymbols() {
         return symbols;
     }
@@ -153,7 +106,7 @@ public class EmaConsumerService {
         this.schema = schema;
     }
 
-    public DataTableBasic<String> getTable() {
+    public ConcurrentTableBasic<String> getTable() {
         return table;
     }
 

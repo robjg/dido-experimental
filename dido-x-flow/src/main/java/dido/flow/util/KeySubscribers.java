@@ -22,7 +22,7 @@ public class KeySubscribers<K> implements KeyConsumer<K> {
         if (existingKey == null) {
             existingKey = additional;
         }
-        else if (existingKey instanceof KeyConsumerList subscribers) {
+        else if (existingKey instanceof KeySubscribers.KeyConsumerList subscribers) {
             subscribers.consumers.add(additional);
         }
         else {
@@ -36,16 +36,16 @@ public class KeySubscribers<K> implements KeyConsumer<K> {
     }
 
     @Override
-    public void onInsert(K key) {
+    public void onAvailable(K key) {
         if (existingKey != null) {
-            existingKey.onInsert(key);
+            existingKey.onAvailable(key);
         }
     }
 
     @Override
-    public void onDelete(K key) {
+    public void onRemoved(K key) {
         if (existingKey != null) {
-            existingKey.onDelete(key);
+            existingKey.onRemoved(key);
         }
     }
 
@@ -56,7 +56,7 @@ public class KeySubscribers<K> implements KeyConsumer<K> {
     void removeKeySubscriber(KeyConsumer<? super K> subscriber) {
         if (existingKey == subscriber) {
             existingKey = null;
-        } else if (existingKey instanceof KeyConsumerList<? super K> list) {
+        } else if (existingKey instanceof KeySubscribers.KeyConsumerList<? super K> list) {
             list.consumers.remove(subscriber);
             if (list.consumers.size() == 1) {
                 existingKey = list.consumers.getFirst();
@@ -69,13 +69,13 @@ public class KeySubscribers<K> implements KeyConsumer<K> {
         private final List<KeyConsumer<? super K>> consumers = new ArrayList<>();
 
         @Override
-        public void onInsert(K key) {
-            consumers.forEach(c -> c.onInsert(key));
+        public void onAvailable(K key) {
+            consumers.forEach(c -> c.onAvailable(key));
         }
 
         @Override
-        public void onDelete(K key) {
-            consumers.forEach(c -> c.onDelete(key));
+        public void onRemoved(K key) {
+            consumers.forEach(c -> c.onRemoved(key));
         }
     }
 }

@@ -21,6 +21,22 @@ public interface IndexSequence {
         return indices;
     }
 
+    default IndexIterator indexIterator() {
+        return new IndexIterator() {
+            int pos = -1;
+
+            @Override
+            public int next() {
+                if (pos == -1) {
+                    pos = firstIndex();
+                } else {
+                    pos = nextIndex(pos);
+                }
+                return pos;
+            }
+        };
+    }
+
     static IndexSequence fromSchema(IndexedSchema schema) {
 
         return new IndexSequence() {
@@ -48,6 +64,7 @@ public interface IndexSequence {
             public int[] getIndices() {
                 return schema.getIndices();
             }
+
         };
     }
 
@@ -59,8 +76,7 @@ public interface IndexSequence {
                 int i = IndexSequence.this.firstIndex();
                 if (i == 0) {
                     return 0;
-                }
-                else {
+                } else {
                     return by + i;
                 }
             }
@@ -70,8 +86,7 @@ public interface IndexSequence {
                 int i = IndexSequence.this.nextIndex(index - by);
                 if (i == 0) {
                     return 0;
-                }
-                else {
+                } else {
                     return i + by;
                 }
             }
@@ -81,8 +96,7 @@ public interface IndexSequence {
                 int i = IndexSequence.this.lastIndex();
                 if (i == 0) {
                     return 0;
-                }
-                else {
+                } else {
                     return by + i;
                 }
             }

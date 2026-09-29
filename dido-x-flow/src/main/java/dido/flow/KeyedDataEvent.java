@@ -4,6 +4,8 @@ import dido.data.DidoData;
 import dido.data.partial.PartialData;
 import dido.flow.util.KeyedDataEvents;
 
+import java.util.function.Consumer;
+
 public sealed interface KeyedDataEvent<K>
         permits KeyedDataEvent.Complete, KeyedDataEvent.Partial, KeyedDataEvent.Delete {
 
@@ -54,4 +56,11 @@ public sealed interface KeyedDataEvent<K>
         return KeyedDataEvents.delete(key);
     }
 
+    static <K> KeyedDataConsumer<K> asKeyedDataConsumer(Consumer<? super KeyedDataEvent<K>> consumer) {
+        return KeyedDataEvents.asKeyedDataConsumer(consumer);
+    }
+
+    static <K> Consumer<KeyedDataEvent<K>> fromKeyedDataConsumer(KeyedDataConsumer<? super K> consumer) {
+        return KeyedDataEvents.fromKeyedDataConsumer(consumer);
+    }
 }

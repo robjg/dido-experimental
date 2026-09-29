@@ -23,7 +23,7 @@ public class EmaIProviderService {
 
     public void start() {
 
-        close = DidoIProviderClient
+        close = DidoOmmIProvider
                 .with()
                 .port(port)
                 .from(Objects.requireNonNull(

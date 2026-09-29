@@ -3,6 +3,8 @@ package dido.data.partial;
 import dido.data.DidoData;
 import dido.data.util.FieldSelectionFactory;
 
+import java.util.Objects;
+
 public interface PartialData extends IndexSequence {
 
     DidoData getData();
@@ -39,5 +41,46 @@ public interface PartialData extends IndexSequence {
         }
         sb.append('}');
         return sb.toString();
+    }
+
+    /**
+     * Provide a standard way of calculating the hash code.
+     *
+     * @param partial The partial data.
+     * @return The hash code.
+     */
+    static int hashCode(PartialData partial) {
+        int hash = 0;
+        for (int index = partial.firstIndex(); index > 0; index = partial.nextIndex(index)) {
+            Object value = partial.getData().getAt(index);
+            hash = hash * 31 + (value == null ? 0 :value.hashCode());
+        }
+        return hash;
+    }
+
+    /**
+     * Provide a standard way of testing equality. Partial Dido Data depends on
+     * iteration order not on being the same set of fields.
+     *
+     * @param partial1 The first data.
+     * @param partial2 The second data.
+     *
+     * @return true if they are equal. false otherwise.
+     */
+    static boolean equals(PartialData partial1, PartialData partial2) {
+        if (partial1 == partial2) {
+            return true;
+        }
+        if (partial1 == null || partial2 == null) {
+            return false;
+        }
+
+        int index1 = partial1.firstIndex(), index2 = partial2.firstIndex();
+        for ( ; index1 > 0 && index2 > 0; index1 = partial1.nextIndex(index1), index2 = partial2.nextIndex(index2)) {
+            if (! Objects.equals(partial1.getData().getAt(index1), partial2.getData().getAt(index2))) {
+                return false;
+            }
+        }
+        return index1 == 0 && index2 == 0;
     }
 }

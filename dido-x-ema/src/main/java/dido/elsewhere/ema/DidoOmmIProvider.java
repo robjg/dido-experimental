@@ -5,20 +5,25 @@ import com.refinitiv.ema.rdm.DataDictionary;
 import com.refinitiv.ema.rdm.EmaRdm;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
-import dido.flow.*;
+import dido.flow.DidoSubscription;
+import dido.flow.KeyedDataConsumer;
+import dido.flow.QuietlyCloseable;
 import dido.table.DataTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.Function;
 
-public class DidoIProviderClient implements OmmProviderClient {
+/**
+ * Create an Omm Interactive Provider using the EMA library for providing
+ * OMM MarketPrice price date to the Advanced Distribution Hub.
+ */
+public class DidoOmmIProvider implements OmmProviderClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(DidoIProviderClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(DidoOmmIProvider.class);
 
     private final Map<String, Set<Long>> handles = new HashMap<>();
 
@@ -26,8 +31,8 @@ public class DidoIProviderClient implements OmmProviderClient {
 
     private final DataTable<String> dataTable;
 
-    public DidoIProviderClient(DidoToOmm didoToOmm,
-                               DataTable<String> dataTable) {
+    public DidoOmmIProvider(DidoToOmm didoToOmm,
+                            DataTable<String> dataTable) {
         this.didoToOmm = didoToOmm;
         this.dataTable = dataTable;
     }
@@ -45,21 +50,27 @@ public class DidoIProviderClient implements OmmProviderClient {
             return this;
         }
 
+        public Settings dictionaryDir(Path dictionaryDir) {
+            this.dictionaryDir = dictionaryDir;
+            return this;
+        }
+
         public QuietlyCloseable from(DataTable<String> dataTable) {
 
-            DidoToOmm didoToOmm = DidoToOmm.forSchema(dataTable.getSchema());
+            Path dictionaryDir = Objects.requireNonNullElse(
+                    this.dictionaryDir, Path.of("."));
 
-            if (dictionaryDir != null) {
                 DataDictionary dictionary = EmaFactory.createDataDictionary();
-                dictionary.loadFieldDictionary("./RDMFieldDictionary");
-                dictionary.loadEnumTypeDictionary("./enumtype.def");
-            }
+                dictionary.loadFieldDictionary(dictionaryDir
+                        .resolve("RDMFieldDictionary").toString());
+                dictionary.loadEnumTypeDictionary(dictionaryDir
+                        .resolve("enumtype.def").toString());
 
-            DidoIProviderClient appClient = new DidoIProviderClient(didoToOmm, dataTable);
-            DidoSubscription subscription = appClient.init();
+            DidoToOmm didoToOmm = DidoToOmm.forSchema(dataTable.getSchema(), dictionary);
+
+            DidoOmmIProvider appClient = new DidoOmmIProvider(didoToOmm, dataTable);
 
             OmmIProviderConfig config = EmaFactory.createOmmIProviderConfig();
-
 
             logger.info("Creating config {}", config);
 
@@ -68,6 +79,8 @@ public class DidoIProviderClient implements OmmProviderClient {
             logger.info("Creating provider on port {}", portStr);
 
             OmmProvider provider = EmaFactory.createOmmProvider(config.port(portStr), appClient);
+
+            DidoSubscription subscription = appClient.init(provider);
 
             return () -> {
                 subscription.close();
@@ -80,8 +93,8 @@ public class DidoIProviderClient implements OmmProviderClient {
         return new Settings();
     }
 
-    DidoSubscription init() {
-        return dataTable.subscribe(new DataForwarder());
+    DidoSubscription init(OmmProvider provider) {
+        return dataTable.subscribe(new DataForwarder(provider));
     }
 
     public void onReqMsg(ReqMsg reqMsg, OmmProviderEvent event) {
@@ -146,7 +159,8 @@ public class DidoIProviderClient implements OmmProviderClient {
             return;
         }
         else {
-            handles.compute(key, (k, v) -> new HashSet<>()).add(handle);
+            handles.computeIfAbsent(key, k -> new HashSet<>())
+                    .add(handle);
         }
 
         DidoData data = dataTable.get(key);
@@ -159,7 +173,7 @@ public class DidoIProviderClient implements OmmProviderClient {
 
         FieldList fieldList = didoToOmm.apply(data);
 
-        logger.info("Processing Market Price request {}", fieldList);
+        logger.info("Processing Market Price request {}", reqMsg);
 
         event.provider().submit(EmaFactory.createRefreshMsg()
                         .name(key)
@@ -181,25 +195,54 @@ public class DidoIProviderClient implements OmmProviderClient {
 
     class DataForwarder implements KeyedDataConsumer<String> {
 
+        private final OmmProvider provider;
+
+        private final Function<PartialData, FieldList> partialDataFunction =
+                didoToOmm.partialDataFunction();
+
+        DataForwarder(OmmProvider provider) {
+            this.provider = provider;
+        }
+
         @Override
         public void onData(String key, DidoData data) {
 
             Set<Long> clients = handles.get(key);
+            if (clients == null || clients.isEmpty()) {
+                return;
+            }
 
             FieldList fieldList = didoToOmm.apply(data);
 
-            UpdateMsg msg = EmaFactory.createUpdateMsg().payload(fieldList);
-
+            send(clients, fieldList);
         }
 
         @Override
         public void onPartial(String key, PartialData partial) {
 
+            Set<Long> clients = handles.get(key);
+            if (clients == null || clients.isEmpty()) {
+                return;
+            }
+
+            FieldList fieldList = partialDataFunction.apply(partial);
+
+            send(clients, fieldList);
         }
 
         @Override
         public void onDelete(String key) {
 
+        }
+
+        void send(Set<Long> clients, FieldList fieldList) {
+
+            UpdateMsg updateMsg = EmaFactory.createUpdateMsg().payload(fieldList);
+
+            for (Long client : clients) {
+
+                provider.submit( updateMsg, client);
+            }
         }
     }
 

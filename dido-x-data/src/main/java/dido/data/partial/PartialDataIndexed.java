@@ -16,6 +16,12 @@ public class PartialDataIndexed extends AbstractPartialData implements PartialDa
     }
 
     public static PartialData of(DidoData data, int... modifiedIndices) {
+        if (modifiedIndices.length == 0) {
+            return new Empty(data);
+        }
+        if (modifiedIndices.length == 1) {
+            return new Single(data, modifiedIndices[0]);
+        }
         return new PartialDataIndexed(data, modifiedIndices.clone());
     }
 
@@ -26,46 +32,44 @@ public class PartialDataIndexed extends AbstractPartialData implements PartialDa
 
     @Override
     public int firstIndex() {
-        if (modifiedIndices.length > 0) {
-            lastPos = 0;
-            return modifiedIndices[0];
-        }
-        else {
-            return 0;
-        }
+        lastPos = 0;
+        return modifiedIndices[0];
     }
 
     @Override
     public int nextIndex(int index) {
         int pos = lastPos;
-        if (pos == 0 || !(modifiedIndices[pos] == index)) {
-            for (pos = 0; pos < modifiedIndices.length; ++pos) {
+        if (modifiedIndices[pos] == index) {
+            if (pos == modifiedIndices.length - 1) {
+                lastPos = 0;
+                return 0;
+            }
+            else {
+                lastPos = pos++;
+                return modifiedIndices[pos];
+            }
+        }
+        else {
+            for (pos = 0; pos < modifiedIndices.length - 1; ++pos) {
                 if (modifiedIndices[pos] == index) {
-                    break;
+                    ++pos;
+                    lastPos = pos;
+                    return modifiedIndices[pos];
                 }
             }
         }
-        ++pos;
-        if (pos == modifiedIndices.length) {
-            lastPos = 0;
-            return 0;
-        }
-        else {
-            lastPos = pos;
-            return modifiedIndices[pos];
-        }
+        lastPos = 0;
+        return 0;
     }
 
     @Override
     public int lastIndex() {
-        if (modifiedIndices.length > 0) {
-            lastPos = modifiedIndices.length -1;
-            return modifiedIndices[modifiedIndices.length -1];
-        }
-        else {
-            lastPos = 0;
-            return 0;
-        }
+        return modifiedIndices[modifiedIndices.length -1];
+    }
+
+    @Override
+    public IndexIterator indexIterator() {
+        return IndexIterator.of(modifiedIndices);
     }
 
     @Override
@@ -78,4 +82,85 @@ public class PartialDataIndexed extends AbstractPartialData implements PartialDa
         return modifiedIndices.clone();
     }
 
+    static class Empty extends AbstractPartialData {
+
+        private final DidoData data;
+
+        Empty(DidoData data) {
+            this.data = data;
+        }
+
+        @Override
+        public DidoData getData() {
+            return data;
+        }
+
+        @Override
+        public int firstIndex() {
+            return 0;
+        }
+
+        @Override
+        public int nextIndex(int index) {
+            return 0;
+        }
+
+        @Override
+        public int lastIndex() {
+            return 0;
+        }
+
+        @Override
+        public int getSize() {
+            return 0;
+        }
+
+        @Override
+        public int[] getIndices() {
+            return new int[0];
+        }
+    }
+
+    static class Single extends AbstractPartialData {
+
+        private final DidoData data;
+
+        private final int index;
+
+        Single(DidoData data,
+               int index) {
+            this.data = data;
+            this.index = index;
+        }
+
+        @Override
+        public DidoData getData() {
+            return data;
+        }
+
+        @Override
+        public int firstIndex() {
+            return index;
+        }
+
+        @Override
+        public int nextIndex(int index) {
+            return 0;
+        }
+
+        @Override
+        public int lastIndex() {
+            return index;
+        }
+
+        @Override
+        public int getSize() {
+            return 1;
+        }
+
+        @Override
+        public int[] getIndices() {
+            return new int[] { index };
+        }
+    }
 }

@@ -4,6 +4,7 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.FromValues;
 import dido.data.partial.PartialDataIndexed;
+import dido.flow.KeyPublisher;
 import dido.table.DataTable;
 import dido.table.internal.DataTableBasic;
 import org.oddjob.framework.Service;
@@ -25,7 +26,7 @@ public class TickingTableService implements Service {
 
     private ScheduledExecutorService executorService;
 
-    private DataTable<String> table;
+    private DataTableBasic<String> table;
 
     private Runnable close;
 
@@ -93,6 +94,10 @@ public class TickingTableService implements Service {
     }
 
     public DataTable<String> getTable() {
+        return table;
+    }
+
+    public KeyPublisher<String> getKeyPublisher() {
         return table;
     }
 

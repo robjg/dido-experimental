@@ -1,26 +1,32 @@
 package dido.elsewhere.ema;
 
 import com.refinitiv.ema.access.*;
+import com.refinitiv.ema.rdm.DataDictionary;
+import com.refinitiv.ema.rdm.DictionaryEntry;
+import com.refinitiv.ema.rdm.MfFieldTypes;
 import dido.data.*;
 import dido.data.NoSuchFieldException;
 import dido.data.partial.PartialData;
 import dido.data.schema.DataSchemaImpl;
+import dido.data.schema.HasSchema;
 import dido.data.useful.AbstractData;
 import dido.data.useful.AbstractFieldGetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Provide {@link DidoData} by wrapping OMM {@link FieldEntry}s.
  */
-public class DidoOmmData  {
+public class DidoOmmData implements HasSchema {
 
     private static final Logger logger = LoggerFactory.getLogger(DidoOmmData.class);
 
@@ -33,36 +39,132 @@ public class DidoOmmData  {
         this.fidMap = fidMap;
     }
 
+    public static class Settings {
 
+        private DataSchema schema;
 
-    public static DidoOmmData of(FieldList fieldEntries) {
+        private boolean partialSchema;
 
-        int size = fieldEntries.size();
-        List<SchemaField> schemaFields = new ArrayList<>();
-        Map<Integer, Integer> fidMap = new HashMap<>();
-        FieldGetter[] getters = new FieldGetter[size];
-        int i = 0;
-        for (FieldEntry fieldEntry : fieldEntries) {
-
-            getters[i] = fieldGetter(fieldEntry.loadType(), i);
-            ++i;
-
-            SchemaField schemaField = schemaField(fieldEntry, i);
-            if (schemaField == null) {
-                throw new IllegalArgumentException("Unrecognized type for Fid: " + fieldEntry.fieldId() +
-                        " Name = " + fieldEntry.name() + " DataType: " +
-                        DataType.asString(fieldEntry.load().dataType()) + " Value: ");
-
-            }
-
-            schemaFields.add(schemaField);
-            fidMap.put(fieldEntry.fieldId(), i);
+        public Settings schema(DataSchema schema) {
+            this.schema = schema;
+            this.partialSchema = false;
+            return this;
         }
 
-        return new DidoOmmData(
-                new Schema(schemaFields, size == 0 ? 0 : 1,
-                        size, getters),
-                fidMap);
+        public Settings partialSchema(DataSchema partialSchema) {
+            this.schema = partialSchema;
+            this.partialSchema = true;
+            return this;
+        }
+
+        public DidoOmmData of(DataDictionary dictionary, int[] fids) {
+
+            if (partialSchema) {
+                return ofUnknown(dictionary, fids);
+            }
+            else {
+                return ofKnown(dictionary, Arrays.stream(fids)
+                        .boxed()
+                        .collect(Collectors.toSet()));
+            }
+        }
+
+        public DidoOmmData ofUnknown(DataDictionary dictionary, int[] fids) {
+
+            DataSchema schema = Objects.requireNonNullElseGet(this.schema,
+                    DataSchema::emptySchema);
+
+            int size = fids.length;
+            List<SchemaField> schemaFields = new ArrayList<>();
+            Map<Integer, Integer> fidMap = new HashMap<>(size);
+            FieldGetter[] getters = new FieldGetter[size];
+            for (int i = 0; i < size; ++i) {
+
+                DictionaryEntry dictionaryEntry = dictionary.entry(fids[i]);
+
+                int didoIndex = i + 1;
+
+                SchemaField schemaField = schemaField(dictionaryEntry,
+                        didoIndex, schema);
+
+                getters[i] = fieldGetter(dictionaryEntry, i, schemaField.getType());
+
+                schemaFields.add(schemaField);
+                fidMap.put(dictionaryEntry.fid(), didoIndex);
+            }
+
+            return new DidoOmmData(
+                    new Schema(schemaFields,
+                            size == 0 ? 0 : 1, size, getters),
+                    fidMap);
+        }
+
+        public DidoOmmData of(DataDictionary dictionary) {
+
+            if (partialSchema || schema == null) {
+                throw new IllegalArgumentException("PartialSchema or no schema so fields required.");
+            }
+
+            return ofKnown(dictionary, null);
+        }
+
+        private DidoOmmData ofKnown(DataDictionary dictionary, Set<Integer> fids) {
+
+            List<SchemaField> schemaFields = new ArrayList<>();
+            List<FieldGetter> getters = new ArrayList<>();
+            Map<Integer, Integer> fidMap = new HashMap<>(schema.getSize());
+
+            int i = 0;
+            for (SchemaField schemaField : schema.getSchemaFields()) {
+                String fieldName = schemaField.getName();
+                if (!dictionary.hasEntry(fieldName)) {
+                    continue;
+                }
+                DictionaryEntry dictionaryEntry = dictionary.entry(fieldName);
+                int fid = dictionaryEntry.fid();
+                if (fids != null && !fids.contains(fid)) {
+                    continue;
+                }
+
+                getters.add(fieldGetter(dictionaryEntry, i++, schemaField.getType()));
+                schemaFields.add(schemaField.mapToIndex(i));
+                fidMap.put(fid, i);
+            }
+
+            return new DidoOmmData(new Schema(schemaFields,
+                    i == 0 ? 0 : 1, i,
+                    getters.toArray(new FieldGetter[0])),
+                    fidMap);
+        }
+
+        public DidoOmmData of(DataDictionary dictionary, FieldList fieldList) {
+
+            return of(dictionary,
+                    fieldList.stream()
+                            .map(FieldEntry::fieldId)
+                            .mapToInt(Integer::intValue)
+                            .toArray());
+        }
+
+    }
+
+    public static Settings with() {
+        return new Settings();
+    }
+
+    public static DidoOmmData of(DataDictionary dictionary, int[] fids) {
+
+        return with().of(dictionary, fids);
+    }
+
+    public static DidoOmmData of(DataDictionary dictionary, FieldList fieldList) {
+
+        return with().of(dictionary, fieldList);
+    }
+
+    @Override
+    public DataSchema getSchema() {
+        return schema;
     }
 
     public DidoData data(FieldList fieldEntries) {
@@ -85,12 +187,13 @@ public class DidoOmmData  {
     public PartialData partial(FieldList fieldEntries) {
 
         int size = fieldEntries.size();
-        FieldEntry[] entries = new FieldEntry[size];
+        FieldEntry[] entries = new FieldEntry[schema.lastIndex()];
         int[] indices = new int[size];
         int i = 0;
         for (FieldEntry fieldEntry : fieldEntries) {
-            indices[i] = fidMap.get(fieldEntry.fieldId());
-            entries[i++] = fieldEntry;
+            int fieldIndex = fidMap.get(fieldEntry.fieldId());
+            indices[i++] = fieldIndex;
+            entries[fieldIndex - 1] = fieldEntry;
         }
 
         DidoData data = data(entries);
@@ -106,6 +209,7 @@ public class DidoOmmData  {
     abstract static class OmmFieldGetter extends AbstractFieldGetter {
 
         protected final int index;
+
 
         OmmFieldGetter(int index) {
             this.index = index;
@@ -163,31 +267,43 @@ public class DidoOmmData  {
 
         @Override
         public Object getAt(int index) {
-            return schema.getters[index -1].get(this);
+            return schema.getters[index - 1].get(this);
         }
 
 
     }
 
+    static SchemaField schemaField(DictionaryEntry dictionaryEntry,
+                                   int nextIndex,
+                                   DataSchema schema) {
 
 
-    static SchemaField schemaField(FieldEntry fieldEntry, int index) {
 
-        Class<?> type = classFor(fieldEntry.loadType());
-        if (type == null) {
-            return null;
+        String name = dictionaryEntry.acronym();
+        SchemaField existing = schema.getSchemaFieldNamed(name);
+
+        Type type;
+        if (existing == null) {
+                    type = classFor(dictionaryEntry);
+                    if (type == null) {
+                        throw new IllegalArgumentException("Unrecognized type for Fid: " + dictionaryEntry.fid() +
+                                " Name = " + name + " DataType: " +
+                                DataType.asString(dictionaryEntry.rwfType()) + " Value: ");
+                    }
+        } else {
+            type = existing.getType();
         }
-        String name = fieldEntry.name();
-        if (name == null || name.isEmpty()) {
-            name = "fid_" + fieldEntry.fieldId();
-        }
-        return SchemaField.of(index, name, type);
+
+        return SchemaField.of(nextIndex, name, type);
     }
 
-    static Class<?> classFor(int dataType) {
+    static Class<?> classFor(DictionaryEntry dictionaryEntry) {
+
+        int dataType = dictionaryEntry.rwfType();
 
         return switch (dataType) {
-            case DataType.DataTypes.REAL -> double.class;
+            case DataType.DataTypes.REAL -> dictionaryEntry.fieldType() == MfFieldTypes.INTEGER ?
+                    long.class : double.class;
             case DataType.DataTypes.DATE -> LocalDate.class;
             case DataType.DataTypes.TIME -> LocalTime.class;
             case DataType.DataTypes.DATETIME -> LocalDateTime.class;
@@ -199,19 +315,27 @@ public class DidoOmmData  {
         };
     }
 
-    static FieldGetter fieldGetter(int dataType, int index) {
+    static FieldGetter fieldGetter(DictionaryEntry dictionaryEntry,
+                                   int arrayIndex,
+                                   Type type) {
+
+        int dataType = dictionaryEntry.rwfType();
 
         return switch (dataType) {
-            case DataType.DataTypes.REAL -> new RealGetter(index);
-            case DataType.DataTypes.DATE -> new DateGetter(index);
-            case DataType.DataTypes.TIME -> new TimeGetter(index);
-            case DataType.DataTypes.DATETIME -> new DateTimeGetter(index);
-            case DataType.DataTypes.INT -> new IntGetter(index);
-            case DataType.DataTypes.UINT -> new UintGetter(index);
-            case DataType.DataTypes.ASCII -> new AsciiGetter(index);
-            case DataType.DataTypes.ERROR -> new ErrorGetter(index);
-            case DataType.DataTypes.ENUM -> new EnumGetter(index);
-            case DataType.DataTypes.RMTES -> new RmtesGetter(index);
+            case DataType.DataTypes.REAL -> dictionaryEntry.fieldType() == MfFieldTypes.INTEGER ?
+                    type == long.class || type == Long.class ?
+                    new RealLongGetter(arrayIndex) :
+                    new RealIntGetter(arrayIndex) :
+                    new RealGetter(arrayIndex);
+            case DataType.DataTypes.DATE -> new DateGetter(arrayIndex);
+            case DataType.DataTypes.TIME -> new TimeGetter(arrayIndex);
+            case DataType.DataTypes.DATETIME -> new DateTimeGetter(arrayIndex);
+            case DataType.DataTypes.INT -> new IntGetter(arrayIndex);
+            case DataType.DataTypes.UINT -> new UintGetter(arrayIndex);
+            case DataType.DataTypes.ASCII -> new AsciiGetter(arrayIndex);
+            case DataType.DataTypes.ERROR -> new ErrorGetter(arrayIndex);
+            case DataType.DataTypes.ENUM -> new EnumGetter(arrayIndex);
+            case DataType.DataTypes.RMTES -> new RmtesGetter(arrayIndex);
             default -> null;
         };
     }
@@ -241,7 +365,41 @@ public class DidoOmmData  {
 
         @Override
         public double getDouble(DidoData data) {
-            return ((Data) data).fields[index].doubleValue();
+            return ((Data) data).fields[index].real().asDouble();
+        }
+    }
+
+    static class RealLongGetter extends OmmFieldGetter {
+
+        RealLongGetter(int index) {
+            super(index);
+        }
+
+        @Override
+        public Object get(DidoData data) {
+            return getLong(data);
+        }
+
+        @Override
+        public long getLong(DidoData data) {
+            return ((Data) data).fields[index].real().mantissa();
+        }
+    }
+
+    static class RealIntGetter extends OmmFieldGetter {
+
+        RealIntGetter(int index) {
+            super(index);
+        }
+
+        @Override
+        public Object get(DidoData data) {
+            return getInt(data);
+        }
+
+        @Override
+        public int getInt(DidoData data) {
+            return (int) ((Data) data).fields[index].real().mantissa();
         }
     }
 
@@ -367,9 +525,13 @@ public class DidoOmmData  {
 
         @Override
         public Object get(DidoData data) {
-            return ((Data) data).fields[index].rmtes().rmtes().asUTF8();
+            return getString(data);
         }
 
+        @Override
+        public String getString(DidoData data) {
+            return ((Data) data).fields[index].rmtes().rmtes().toString();
+        }
     }
 
     static class ErrorGetter extends OmmFieldGetter {
