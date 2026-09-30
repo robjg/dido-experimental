@@ -57,9 +57,14 @@ public class DidoOmmData implements HasSchema {
             return this;
         }
 
+        public Settings partialSchema(boolean partialSchema) {
+            this.partialSchema = partialSchema;
+            return this;
+        }
+
         public DidoOmmData of(DataDictionary dictionary, int[] fids) {
 
-            if (partialSchema) {
+            if (partialSchema || schema == null) {
                 return ofUnknown(dictionary, fids);
             }
             else {

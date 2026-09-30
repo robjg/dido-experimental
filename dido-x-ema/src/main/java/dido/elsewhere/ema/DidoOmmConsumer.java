@@ -13,24 +13,22 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.function.Function;
 
 public class DidoOmmConsumer implements OmmConsumerClient {
 
     private static final Logger logger = LoggerFactory.getLogger(DidoOmmConsumer.class);
 
-    private final DataDictionary dictionary;
-
-    private final DataSchema schema;
-
     private final KeyedDataConsumer<String> dataConsumer;
+
+    /** Currently using the field list, if no dictionary. */
+    private final Function<FieldList, DidoOmmData> didoOmmDataFunction;
 
     private DidoOmmData didoOmmData;
 
-    public DidoOmmConsumer(DataDictionary dictionary,
-                           DataSchema schema,
+    public DidoOmmConsumer(Function<FieldList, DidoOmmData> didoOmmDataFunction,
                            KeyedDataConsumer<String> dataConsumer) {
-        this.dictionary = dictionary;
-        this.schema = schema;
+        this.didoOmmDataFunction = didoOmmDataFunction;
         this.dataConsumer = dataConsumer;
     }
 
@@ -43,6 +41,8 @@ public class DidoOmmConsumer implements OmmConsumerClient {
         private Path dictionaryDir;
 
         private DataSchema schema;
+
+        private boolean partialSchema;
 
         private KeyPublisher<String> keyAvailability;
 
@@ -63,6 +63,11 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         public  Settings schema(DataSchema schema) {
             this.schema = schema;
+            return this;
+        }
+
+        public Settings partialSchema(boolean partialSchema) {
+            this.partialSchema = partialSchema;
             return this;
         }
 
@@ -91,8 +96,26 @@ public class DidoOmmConsumer implements OmmConsumerClient {
                     config.host(host)
                             .username("user"));
 
-            DidoOmmConsumer client = new DidoOmmConsumer(dictionary,
-                    schema, dataConsumer);
+            // No or partial schema, we need to wait for a field
+            // list at the moment.
+            // TODO - I think we can look up the service here
+            //  and get the field list.
+            Function<FieldList, DidoOmmData> didoOmmDataFunction;
+            if (partialSchema || schema == null) {
+                didoOmmDataFunction =
+                        fieldList -> DidoOmmData.with()
+                                .schema(schema)
+                                .partialSchema(partialSchema)
+                                .of(dictionary, fieldList);
+            } else {
+                DidoOmmData didoOmmData = DidoOmmData.with()
+                        .schema(schema)
+                        .of(dictionary);
+                didoOmmDataFunction = fieldList -> didoOmmData;
+            }
+
+            DidoOmmConsumer client = new DidoOmmConsumer(
+                    didoOmmDataFunction, dataConsumer);
 
             java.util.Map<String, Long> handles = new HashMap<>();
 
@@ -130,12 +153,10 @@ public class DidoOmmConsumer implements OmmConsumerClient {
         return new Settings();
     }
 
-
     void ensureDidoOmmData(FieldList fieldList) {
 
         if (didoOmmData == null) {
-            didoOmmData = DidoOmmData.with().schema(schema)
-                    .of(dictionary, fieldList);
+            didoOmmData = didoOmmDataFunction.apply(fieldList) ;
         }
     }
 

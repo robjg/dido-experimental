@@ -13,6 +13,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * @oddjob.description A server that provides a Consumer of LSEG Real Time Data.
+ * T
+ */
 public class EmaConsumerService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmaConsumerService.class);
@@ -88,7 +92,13 @@ public class EmaConsumerService {
         this.serviceName = serviceName;
     }
 
+    public Path getDictionaryDir() {
+        return dictionaryDir;
+    }
 
+    public void setDictionaryDir(Path dictionaryDir) {
+        this.dictionaryDir = dictionaryDir;
+    }
 
     public List<String> getSymbols() {
         return symbols;

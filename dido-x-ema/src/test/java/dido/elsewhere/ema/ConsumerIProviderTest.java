@@ -2,9 +2,8 @@ package dido.elsewhere.ema;
 
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
-import dido.table.DataTable;
 import dido.flow.KeyedDataConsumer;
-import org.junit.jupiter.api.Disabled;
+import dido.table.DataTable;
 import org.junit.jupiter.api.Test;
 import org.oddjob.Oddjob;
 import org.oddjob.OddjobLookup;
@@ -22,7 +21,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 class ConsumerIProviderTest {
 
     @Test
-    @Disabled
     void iProviderConsumer() throws InterruptedException, ArooaConversionException {
 
         File providerConfig = new File(Objects.requireNonNull(
