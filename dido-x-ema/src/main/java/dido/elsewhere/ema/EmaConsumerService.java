@@ -21,19 +21,51 @@ public class EmaConsumerService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmaConsumerService.class);
 
+    /**
+     * @oddjob.description The name of the service as seen in Oddjob.
+     * @oddjob.required No.
+     */
     private String name;
 
+    /**
+     * @oddjob.description The host address in server:port format.
+     * @oddjob.required No. See LSEG docs for defaults.
+     */
     private String host;
 
+    /**
+     * @oddjob.description The service name to request data from.
+     * @oddjob.required Yes.
+     */
     private String serviceName;
 
+    /**
+     * @oddjob.description The directory where dictionary files are.
+     * At the moment dictionary files must exist locally.
+     * @oddjob.required No. Defaults to "."
+     */
     private Path dictionaryDir;
 
+    /**
+     * @oddjob.description List of symbols.
+     * More options required.
+     * @oddjob.required No. Defaults to "."
+     */
     private List<String> symbols;
 
+    /**
+     * @oddjob.description Internal table that is updated.
+     * @oddjob.required Read Only
+     */
     private ConcurrentTableBasic<String> table;
 
+    /**
+     * @oddjob.description Required for the table.
+     * @oddjob.required Yes
+     */
     private DataSchema schema;
+
+    private boolean partialSchema;
 
     private QuietlyCloseable close;
 
@@ -59,6 +91,8 @@ public class EmaConsumerService {
                 .host(host)
                 .serviceName(serviceName)
                 .dictionaryDir(dictionaryDir)
+                .schema(schema)
+                .partialSchema(partialSchema)
                 .keyAvailability(keyAvailability)
                 .to(table);
 

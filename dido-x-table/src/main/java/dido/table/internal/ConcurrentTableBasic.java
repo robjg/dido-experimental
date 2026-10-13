@@ -14,6 +14,11 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
+/**
+ * A very crude wrapper around a {@link DataTableBasic} to make it Thread Safe.
+ *
+ * @param <K> The key type.
+ */
 public class ConcurrentTableBasic<K extends Comparable<K>>
         implements ConcurrentTable<K>, KeyPublisher<K>, KeyedDataConsumer<K> {
 
@@ -29,6 +34,31 @@ public class ConcurrentTableBasic<K extends Comparable<K>>
         this.copy = copy;
     }
 
+    /**
+     * Create a new instance.
+     *
+     * @param schema The schema of the incoming data.
+     *
+     * @return The instance.
+     *
+     * @param <K> The key type.
+     */
+    public static <K extends Comparable<K>> ConcurrentTableBasic<K>
+    create(DataSchema schema) {
+        return create(schema, DataFactoryProvider.newInstance());
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param schema The schema of the incoming data.
+     * @param dataFactoryProvider Used to create a copy of the mutable table
+     *                            data when retrieving.
+     *
+     * @return The instance.
+     *
+     * @param <K> The key type.
+     */
     public static <K extends Comparable<K>> ConcurrentTableBasic<K>
     create(DataSchema schema,
            DataFactoryProvider dataFactoryProvider) {

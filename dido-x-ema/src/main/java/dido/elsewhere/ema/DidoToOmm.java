@@ -28,6 +28,8 @@ public class DidoToOmm implements Function<DidoData, FieldList> {
 
     private final Map<Integer, Function<DidoData, FieldEntry>> fieldEntries;
 
+    private final FieldList fieldList = EmaFactory.createFieldList();
+
     private DidoToOmm(Map<Integer, Function<DidoData, FieldEntry>> fieldEntries) {
         this.fieldEntries = fieldEntries;
     }
@@ -48,7 +50,6 @@ public class DidoToOmm implements Function<DidoData, FieldList> {
             int fid = dictionaryEntry.fid();
             int rwfType = dictionaryEntry.rwfType();
             int fieldType = dictionaryEntry.fieldType();
-            int length = dictionaryEntry.length();
 
             logger.debug("Creating Field for {}", dictionaryEntry);
 
@@ -81,7 +82,7 @@ public class DidoToOmm implements Function<DidoData, FieldList> {
 
     @Override
     public FieldList apply(DidoData didoData) {
-        FieldList fieldList = EmaFactory.createFieldList();
+        fieldList.clear();
         for (Map.Entry<Integer, Function<DidoData, FieldEntry>> entry : fieldEntries.entrySet()) {
             Function<DidoData, FieldEntry> creator =  entry.getValue();
             fieldList.add(creator.apply(didoData));

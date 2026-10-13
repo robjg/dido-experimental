@@ -2,7 +2,10 @@ package dido.elsewhere.ema;
 
 import com.refinitiv.ema.access.*;
 import com.refinitiv.ema.rdm.DataDictionary;
+import com.refinitiv.ema.rdm.EmaRdm;
 import dido.data.DataSchema;
+import dido.data.DidoData;
+import dido.data.partial.PartialData;
 import dido.flow.KeyConsumer;
 import dido.flow.KeyPublisher;
 import dido.flow.KeyedDataConsumer;
@@ -21,14 +24,21 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
     private final KeyedDataConsumer<String> dataConsumer;
 
-    /** Currently using the field list, if no dictionary. */
-    private final Function<FieldList, DidoOmmData> didoOmmDataFunction;
+    /**
+     * Currently using the field list, if no dictionary.
+     */
+    private final DidoOmmManager didoOmmManager;
 
-    private DidoOmmData didoOmmData;
+    private final DataDictionary dataDictionary;
 
-    public DidoOmmConsumer(Function<FieldList, DidoOmmData> didoOmmDataFunction,
-                           KeyedDataConsumer<String> dataConsumer) {
-        this.didoOmmDataFunction = didoOmmDataFunction;
+    private boolean fldDictComplete = false;
+    private boolean enumTypeComplete = false;
+
+    DidoOmmConsumer(DataDictionary dataDictionary,
+                    DidoOmmManager didoOmmManager,
+                    KeyedDataConsumer<String> dataConsumer) {
+        this.dataDictionary = dataDictionary;
+        this.didoOmmManager = didoOmmManager;
         this.dataConsumer = dataConsumer;
     }
 
@@ -43,6 +53,10 @@ public class DidoOmmConsumer implements OmmConsumerClient {
         private DataSchema schema;
 
         private boolean partialSchema;
+
+        private String username;
+
+        private String password;
 
         private KeyPublisher<String> keyAvailability;
 
@@ -61,13 +75,23 @@ public class DidoOmmConsumer implements OmmConsumerClient {
             return this;
         }
 
-        public  Settings schema(DataSchema schema) {
+        public Settings schema(DataSchema schema) {
             this.schema = schema;
             return this;
         }
 
         public Settings partialSchema(boolean partialSchema) {
             this.partialSchema = partialSchema;
+            return this;
+        }
+
+        public Settings username(String username) {
+            this.username = username;
+            return this;
+        }
+
+        public Settings password(String password) {
+            this.password = password;
             return this;
         }
 
@@ -81,41 +105,41 @@ public class DidoOmmConsumer implements OmmConsumerClient {
             String serviceName = Objects.requireNonNull(this.serviceName,
                     "Service name cannot be null");
 
-            Path dictionaryDir = Objects.requireNonNullElse(
-                    this.dictionaryDir, Path.of("."));
-
-            DataDictionary dictionary = EmaFactory.createDataDictionary();
-            dictionary.loadFieldDictionary(dictionaryDir
-                    .resolve("RDMFieldDictionary").toString());
-            dictionary.loadEnumTypeDictionary(dictionaryDir
-                    .resolve("enumtype.def").toString());
-
             OmmConsumerConfig config = EmaFactory.createOmmConsumerConfig();
-
-            OmmConsumer consumer = EmaFactory.createOmmConsumer(
-                    config.host(host)
-                            .username("user"));
-
-            // No or partial schema, we need to wait for a field
-            // list at the moment.
-            // TODO - I think we can look up the service here
-            //  and get the field list.
-            Function<FieldList, DidoOmmData> didoOmmDataFunction;
-            if (partialSchema || schema == null) {
-                didoOmmDataFunction =
-                        fieldList -> DidoOmmData.with()
-                                .schema(schema)
-                                .partialSchema(partialSchema)
-                                .of(dictionary, fieldList);
-            } else {
-                DidoOmmData didoOmmData = DidoOmmData.with()
-                        .schema(schema)
-                        .of(dictionary);
-                didoOmmDataFunction = fieldList -> didoOmmData;
+            if (host != null) {
+                config = config.host(host);
+            }
+            if (username != null) {
+                config = config.username(username);
+            }
+            if (password != null) {
+                config = config.password(password);
             }
 
-            DidoOmmConsumer client = new DidoOmmConsumer(
-                    didoOmmDataFunction, dataConsumer);
+            OmmConsumer consumer = EmaFactory.createOmmConsumer(config);
+
+            DidoOmmManager didoOmmManager = new DidoOmmManager(schema, partialSchema);
+
+            DataDictionary dictionary = EmaFactory.createDataDictionary();
+            DidoOmmConsumer client = new DidoOmmConsumer(dictionary,
+                    didoOmmManager, dataConsumer);
+
+            ReqMsg reqMsg = EmaFactory.createReqMsg();
+
+            if (dictionaryDir == null) {
+
+                consumer.registerClient(reqMsg.clear().domainType(EmaRdm.MMT_DICTIONARY).name("RWFFld").
+                        filter(EmaRdm.DICTIONARY_NORMAL), client);
+
+                consumer.registerClient(reqMsg.clear().domainType(EmaRdm.MMT_DICTIONARY).name("RWFEnum").
+                        filter(EmaRdm.DICTIONARY_NORMAL), client);
+            } else {
+                dictionary.loadFieldDictionary(dictionaryDir
+                        .resolve("RDMFieldDictionary").toString());
+                dictionary.loadEnumTypeDictionary(dictionaryDir
+                        .resolve("enumtype.def").toString());
+                didoOmmManager.onDictionary(dictionary);
+            }
 
             java.util.Map<String, Long> handles = new HashMap<>();
 
@@ -124,10 +148,11 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
                 @Override
                 public void onAvailable(String key) {
-                    ReqMsg reqMsg = EmaFactory.createReqMsg();
 
-                    long handle = consumer.registerClient(reqMsg.serviceName(serviceName)
-                            .name(key), client);
+                    long handle = consumer.registerClient(reqMsg.clear()
+                                    .serviceName(serviceName)
+                                    .name(key),
+                            client);
 
                     handles.put(key, handle);
                 }
@@ -148,44 +173,70 @@ public class DidoOmmConsumer implements OmmConsumerClient {
         }
     }
 
+    // No or partial schema, we need to wait for a field
+    // list at the moment.
+    // TODO - I think we can look up the service here
+    //  and get the field list.
+    static class DidoOmmManager {
+
+        private final DataSchema schema;
+
+        private final boolean partialSchema;
+
+        private Function<FieldList, DidoOmmData> didoOmmDataFunction;
+
+        private DidoOmmData didoOmmData;
+
+        DidoOmmManager(DataSchema schema, boolean partialSchema) {
+            this.schema = schema;
+            this.partialSchema = partialSchema;
+        }
+
+        void onDictionary(DataDictionary dictionary) {
+            if (partialSchema || schema == null) {
+                didoOmmDataFunction =
+                        fieldList -> DidoOmmData.with()
+                                .schema(schema)
+                                .partialSchema(partialSchema)
+                                .of(dictionary, fieldList);
+            } else {
+                DidoOmmData didoOmmData = DidoOmmData.with()
+                        .schema(schema)
+                        .of(dictionary);
+                didoOmmDataFunction = fieldList -> didoOmmData;
+            }
+        }
+
+
+        DidoData onFieldList(FieldList fieldList) {
+            if (didoOmmData == null) {
+                didoOmmData = didoOmmDataFunction.apply(fieldList);
+            }
+            return didoOmmData.data(fieldList);
+        }
+
+        PartialData onPartialFieldList(FieldList fieldList) {
+            return didoOmmData.partial(fieldList);
+        }
+    }
+
     public static Settings with() {
 
         return new Settings();
-    }
-
-    void ensureDidoOmmData(FieldList fieldList) {
-
-        if (didoOmmData == null) {
-            didoOmmData = didoOmmDataFunction.apply(fieldList) ;
-        }
     }
 
     public void onRefreshMsg(RefreshMsg refreshMsg, OmmConsumerEvent event) {
 
         logger.debug("onRefreshMsg: {}", refreshMsg);
 
-        if (DataType.DataTypes.FIELD_LIST == refreshMsg.payload().dataType()) {
-
-            FieldList fieldList = refreshMsg.payload().fieldList();
-            ensureDidoOmmData(fieldList);
-            dataConsumer.onData(refreshMsg.name(), didoOmmData.data(fieldList));
-        } else {
-            logger.warn("onRefreshMsg: unsupported data type");
-        }
+        decode(refreshMsg, refreshMsg.complete());
     }
 
     public void onUpdateMsg(UpdateMsg updateMsg, OmmConsumerEvent event) {
 
         logger.debug("onUpdateMsg: {}", updateMsg);
 
-        if (DataType.DataTypes.FIELD_LIST == updateMsg.payload().dataType()) {
-
-            FieldList fieldList = updateMsg.payload().fieldList();
-
-            dataConsumer.onPartial(updateMsg.name(), didoOmmData.partial(fieldList));
-        } else {
-            logger.warn("onUpdateMsg: unsupported data type");
-        }
+        decode(updateMsg, false);
     }
 
     public void onStatusMsg(StatusMsg statusMsg, OmmConsumerEvent event) {
@@ -201,6 +252,47 @@ public class DidoOmmConsumer implements OmmConsumerClient {
     }
 
     public void onAllMsg(Msg msg, OmmConsumerEvent consumerEvent) {
-        logger.info("onAllMsg: Assume already seen {}", msg);
+    }
+
+    void decode(Msg msg, boolean complete) {
+
+        int dataType = msg.payload().dataType();
+
+        switch (dataType) {
+            case DataType.DataTypes.SERIES:
+
+                if (msg.name().equals("RWFFld")) {
+                    dataDictionary.decodeFieldDictionary(msg.payload().series(), EmaRdm.DICTIONARY_NORMAL);
+
+                    if (complete) {
+                        fldDictComplete = true;
+                    }
+                } else if (msg.name().equals("RWFEnum")) {
+                    dataDictionary.decodeEnumTypeDictionary(msg.payload().series(), EmaRdm.DICTIONARY_NORMAL);
+
+                    if (complete) {
+                        enumTypeComplete = true;
+                    }
+                }
+
+                if (fldDictComplete && enumTypeComplete) {
+                    didoOmmManager.onDictionary(dataDictionary);
+                }
+
+                break;
+            case DataType.DataTypes.FIELD_LIST:
+
+                FieldList fieldList = msg.payload().fieldList();
+                if (complete) {
+                    dataConsumer.onData(msg.name(),
+                            didoOmmManager.onFieldList(fieldList));
+                } else {
+                    dataConsumer.onPartial(msg.name(),
+                            didoOmmManager.onPartialFieldList(fieldList));
+                }
+                break;
+            default:
+                logger.warn("Unsupported data type: {}", dataType);
+        }
     }
 }

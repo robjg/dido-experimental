@@ -25,14 +25,22 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
     private static final Logger logger = LoggerFactory.getLogger(DidoOmmIProvider.class);
 
+    public static final int FRAGMENTATION_SIZE = 256;
+
     private final Map<String, Set<Long>> handles = new HashMap<>();
+
+    private final DataDictionary dataDictionary;
 
     private final DidoToOmm didoToOmm;
 
+    private final RefreshMsg refreshMsg = EmaFactory.createRefreshMsg();
+
     private final DataTable<String> dataTable;
 
-    public DidoOmmIProvider(DidoToOmm didoToOmm,
+    public DidoOmmIProvider(DataDictionary dataDictionary,
+                            DidoToOmm didoToOmm,
                             DataTable<String> dataTable) {
+        this.dataDictionary = dataDictionary;
         this.didoToOmm = didoToOmm;
         this.dataTable = dataTable;
     }
@@ -60,15 +68,16 @@ public class DidoOmmIProvider implements OmmProviderClient {
             Path dictionaryDir = Objects.requireNonNullElse(
                     this.dictionaryDir, Path.of("."));
 
-                DataDictionary dictionary = EmaFactory.createDataDictionary();
-                dictionary.loadFieldDictionary(dictionaryDir
-                        .resolve("RDMFieldDictionary").toString());
-                dictionary.loadEnumTypeDictionary(dictionaryDir
-                        .resolve("enumtype.def").toString());
+            DataDictionary dictionary = EmaFactory.createDataDictionary();
+            dictionary.loadFieldDictionary(dictionaryDir
+                    .resolve("RDMFieldDictionary").toString());
+            dictionary.loadEnumTypeDictionary(dictionaryDir
+                    .resolve("enumtype.def").toString());
 
             DidoToOmm didoToOmm = DidoToOmm.forSchema(dataTable.getSchema(), dictionary);
 
-            DidoOmmIProvider appClient = new DidoOmmIProvider(didoToOmm, dataTable);
+            DidoOmmIProvider appClient = new DidoOmmIProvider(
+                    dictionary, didoToOmm, dataTable);
 
             OmmIProviderConfig config = EmaFactory.createOmmIProviderConfig();
 
@@ -105,6 +114,9 @@ public class DidoOmmIProvider implements OmmProviderClient {
             case EmaRdm.MMT_MARKET_PRICE:
                 processMarketPriceRequest(reqMsg, event);
                 break;
+            case EmaRdm.MMT_DICTIONARY:
+                processDictionaryRequest(reqMsg, event);
+                break;
             default:
                 processInvalidItemRequest(reqMsg, event);
                 break;
@@ -132,6 +144,7 @@ public class DidoOmmIProvider implements OmmProviderClient {
     public void onAllMsg(Msg msg, OmmProviderEvent event) {
     }
 
+
     void processLoginRequest(ReqMsg reqMsg, OmmProviderEvent event) {
         event.provider()
                 .submit(EmaFactory
@@ -147,6 +160,54 @@ public class DidoOmmIProvider implements OmmProviderClient {
                         event.handle());
     }
 
+    void processDictionaryRequest(ReqMsg reqMsg, OmmProviderEvent event) {
+        Series series = EmaFactory.createSeries();
+
+        boolean done = false;
+        refreshMsg.clear().clearCache(true);
+
+        int currentValue;
+
+        if (reqMsg.name().equals("RWFFld")) {
+            currentValue = dataDictionary.minFid();
+
+            while (!done) {
+                currentValue = dataDictionary.encodeFieldDictionary(series, currentValue, reqMsg.filter(), FRAGMENTATION_SIZE);
+
+                done = currentValue == dataDictionary.maxFid();
+
+                event.provider().submit(refreshMsg.name(reqMsg.name())
+                        .serviceName(reqMsg.serviceName())
+                        .domainType(EmaRdm.MMT_DICTIONARY)
+                        .filter(reqMsg.filter())
+                        .payload(series)
+                        .complete(done).
+                        solicited(true), event.handle());
+
+                refreshMsg.clear();
+            }
+        } else if (reqMsg.name().equals("RWFEnum")) {
+            currentValue = 0;
+
+            while (!done) {
+                currentValue = dataDictionary.encodeEnumTypeDictionary(series,
+                        currentValue, reqMsg.filter(), FRAGMENTATION_SIZE);
+
+                done = currentValue == dataDictionary.enumTables().size();
+
+                event.provider().submit(refreshMsg.name(reqMsg.name())
+                        .serviceName(reqMsg.serviceName())
+                        .domainType(EmaRdm.MMT_DICTIONARY)
+                        .filter(reqMsg.filter())
+                        .payload(series)
+                        .complete(done).
+                        solicited(true), event.handle());
+
+                refreshMsg.clear();
+            }
+        }
+    }
+
     void processMarketPriceRequest(ReqMsg reqMsg, OmmProviderEvent event) {
 
         String key = reqMsg.name();
@@ -157,8 +218,7 @@ public class DidoOmmIProvider implements OmmProviderClient {
         if (handleSet != null && !handleSet.contains(handle)) {
             processInvalidItemRequest(reqMsg, event);
             return;
-        }
-        else {
+        } else {
             handles.computeIfAbsent(key, k -> new HashSet<>())
                     .add(handle);
         }
@@ -241,7 +301,7 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
             for (Long client : clients) {
 
-                provider.submit( updateMsg, client);
+                provider.submit(updateMsg, client);
             }
         }
     }
