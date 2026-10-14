@@ -2,8 +2,16 @@
                   prefix="lseg" namespace="oddjob:lseg">
     <components>
         <arooa:bean-def element='ema-consumer'
-                        className='dido.elsewhere.ema.EmaConsumerService'/>
+                        className='dido.elsewhere.ema.EmaConsumerService'>
+                <properties>
+                    <arooa:property name="dictionaryDir" type="ATTRIBUTE"/>
+                </properties>
+        </arooa:bean-def>
         <arooa:bean-def element="ema-iprovider"
-                        className="dido.elsewhere.ema.EmaIProviderService"/>
+                        className="dido.elsewhere.ema.EmaIProviderService">
+            <properties>
+                <arooa:property name="dictionaryDir" type="ATTRIBUTE"/>
+            </properties>
+        </arooa:bean-def>
     </components>
 </arooa:descriptor>

@@ -67,20 +67,24 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
             Path dictionaryDir = Objects.requireNonNullElse(
                     this.dictionaryDir, Path.of("."));
-
+            Path dictionaryFile = dictionaryDir
+                    .resolve("RDMFieldDictionary");
+            Path enumTypeFile = dictionaryDir
+                    .resolve("enumtype.def");
             DataDictionary dictionary = EmaFactory.createDataDictionary();
-            dictionary.loadFieldDictionary(dictionaryDir
-                    .resolve("RDMFieldDictionary").toString());
-            dictionary.loadEnumTypeDictionary(dictionaryDir
-                    .resolve("enumtype.def").toString());
+            logger.info("Loading Data Dictionary from {}", dictionaryFile);
+            dictionary.loadFieldDictionary(dictionaryFile.toString());
+            logger.info("Loading Enum Type Dictionary from {}", enumTypeFile);
+            dictionary.loadEnumTypeDictionary(enumTypeFile.toString());
 
             DidoToOmm didoToOmm = DidoToOmm.forSchema(dataTable.getSchema(), dictionary);
 
             DidoOmmIProvider appClient = new DidoOmmIProvider(
                     dictionary, didoToOmm, dataTable);
 
-            OmmIProviderConfig config = EmaFactory.createOmmIProviderConfig();
-
+            OmmIProviderConfig config = EmaFactory.createOmmIProviderConfig()
+                    //.adminControlDictionary(OmmIProviderConfig.AdminControl.USER_CONTROL)
+                    ;
             logger.info("Creating config {}", config);
 
             String portStr = port == 0 ? "14002" : Integer.toString(port);

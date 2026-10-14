@@ -1,11 +1,12 @@
 package dido.elsewhere.ema;
 
 import dido.data.DataSchema;
-import dido.data.immutable.NonBoxedDataFactoryProvider;
+import dido.data.schema.SchemaAware;
 import dido.flow.KeyConsumer;
 import dido.flow.KeyPublisher;
+import dido.flow.KeyedDataConsumer;
 import dido.flow.QuietlyCloseable;
-import dido.table.internal.ConcurrentTableBasic;
+import dido.flow.util.LoggingKeyedDataConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,18 +55,23 @@ public class EmaConsumerService {
     private List<String> symbols;
 
     /**
-     * @oddjob.description Internal table that is updated.
-     * @oddjob.required Read Only
-     */
-    private ConcurrentTableBasic<String> table;
-
-    /**
      * @oddjob.description Required for the table.
      * @oddjob.required Yes
      */
     private DataSchema schema;
 
+    /**
+     * @oddjob.description If the schema is only a partial schema.
+     * @oddjob.required No
+     */
     private boolean partialSchema;
+
+    /**
+     * @oddjob.description The destination. Set automatically if
+     * used in BeanBus.
+     * @oddjob.required No.
+     */
+    private KeyedDataConsumer<String> to;
 
     private QuietlyCloseable close;
 
@@ -74,8 +80,11 @@ public class EmaConsumerService {
         logger.info("Starting EmaConsumerService for host: {} and symbols: {}",
                 host, symbols);
 
-        this.table = ConcurrentTableBasic.create(schema,
-                new NonBoxedDataFactoryProvider());
+        KeyedDataConsumer<String> to = Objects.requireNonNullElseGet(this.to,
+                LoggingKeyedDataConsumer::new);
+
+        SchemaAware schemaAware = to instanceof SchemaAware ?
+                (SchemaAware) to : null;
 
         List<String> symbols = Objects.requireNonNull(this.symbols);
 
@@ -93,9 +102,9 @@ public class EmaConsumerService {
                 .dictionaryDir(dictionaryDir)
                 .schema(schema)
                 .partialSchema(partialSchema)
+                .schemaAware(schemaAware)
                 .keyAvailability(keyAvailability)
-                .to(table);
-
+                .to(to);
     }
 
     public void stop() {
@@ -150,8 +159,20 @@ public class EmaConsumerService {
         this.schema = schema;
     }
 
-    public ConcurrentTableBasic<String> getTable() {
-        return table;
+    public boolean isPartialSchema() {
+        return partialSchema;
+    }
+
+    public void setPartialSchema(boolean partialSchema) {
+        this.partialSchema = partialSchema;
+    }
+
+    public KeyedDataConsumer<String> getTo() {
+        return to;
+    }
+
+    public void setTo(KeyedDataConsumer<String> to) {
+        this.to = to;
     }
 
     @Override

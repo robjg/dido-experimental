@@ -29,7 +29,8 @@ public class BasicTableService<K extends Comparable<K>>
 
     @Override
     public void setSchema(DataSchema schema) {
-        this.schema = schema;
+        initialise(schema);
+        this.schema = table.getSchema();
     }
 
     public DataSchema getSchema() {
@@ -50,9 +51,6 @@ public class BasicTableService<K extends Comparable<K>>
 
     public void start() {
 
-        if (schema != null) {
-            initialise(schema);
-        }
     }
 
     public void stop() {

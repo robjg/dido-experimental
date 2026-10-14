@@ -58,7 +58,7 @@ class ConsumerIProviderTest {
         clientStates.checkWait();
 
         DataTable<String> clientTable = new OddjobLookup(clientOddjob)
-                .lookup("consumer.table",
+                .lookup("table.table",
                         new TypeToken<DataTable<String>>() {}.getType());
 
         // Wait for a few table updates

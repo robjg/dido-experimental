@@ -6,6 +6,7 @@ import com.refinitiv.ema.rdm.EmaRdm;
 import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
+import dido.data.schema.SchemaAware;
 import dido.flow.KeyConsumer;
 import dido.flow.KeyPublisher;
 import dido.flow.KeyedDataConsumer;
@@ -60,6 +61,8 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         private KeyPublisher<String> keyAvailability;
 
+        private SchemaAware schemaAware;
+
         public Settings host(String host) {
             this.host = host;
             return this;
@@ -95,6 +98,11 @@ public class DidoOmmConsumer implements OmmConsumerClient {
             return this;
         }
 
+        public Settings schemaAware(SchemaAware schemaAware) {
+            this.schemaAware = schemaAware;
+            return this;
+        }
+
         public Settings keyAvailability(KeyPublisher<String> keyAvailability) {
             this.keyAvailability = keyAvailability;
             return this;
@@ -118,7 +126,8 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
             OmmConsumer consumer = EmaFactory.createOmmConsumer(config);
 
-            DidoOmmManager didoOmmManager = new DidoOmmManager(schema, partialSchema);
+            DidoOmmManager didoOmmManager = new DidoOmmManager(schema,
+                    partialSchema, schemaAware);
 
             DataDictionary dictionary = EmaFactory.createDataDictionary();
             DidoOmmConsumer client = new DidoOmmConsumer(dictionary,
@@ -183,30 +192,45 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         private final boolean partialSchema;
 
+        private final SchemaAware schemaAware;
+
         private Function<FieldList, DidoOmmData> didoOmmDataFunction;
 
         private DidoOmmData didoOmmData;
 
-        DidoOmmManager(DataSchema schema, boolean partialSchema) {
+        DidoOmmManager(DataSchema schema,
+                       boolean partialSchema,
+                       SchemaAware schemaAware) {
             this.schema = schema;
             this.partialSchema = partialSchema;
+            this.schemaAware = schemaAware;
         }
 
         void onDictionary(DataDictionary dictionary) {
             if (partialSchema || schema == null) {
                 didoOmmDataFunction =
-                        fieldList -> DidoOmmData.with()
-                                .schema(schema)
-                                .partialSchema(partialSchema)
-                                .of(dictionary, fieldList);
+                        fieldList -> {
+                            DidoOmmData dod = DidoOmmData.with()
+                                    .schema(schema)
+                                    .partialSchema(partialSchema)
+                                    .of(dictionary, fieldList);
+                            notifySchema(dod.getSchema());
+                            return dod;
+                        };
             } else {
                 DidoOmmData didoOmmData = DidoOmmData.with()
                         .schema(schema)
                         .of(dictionary);
                 didoOmmDataFunction = fieldList -> didoOmmData;
+                notifySchema(didoOmmData.getSchema());
             }
         }
 
+        void notifySchema(DataSchema schema) {
+            if (schemaAware != null) {
+                schemaAware.setSchema(schema);
+            }
+        }
 
         DidoData onFieldList(FieldList fieldList) {
             if (didoOmmData == null) {

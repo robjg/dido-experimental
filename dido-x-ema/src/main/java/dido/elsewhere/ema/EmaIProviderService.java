@@ -5,6 +5,7 @@ import dido.table.DataTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.util.Objects;
 
 public class EmaIProviderService {
@@ -19,13 +20,14 @@ public class EmaIProviderService {
 
     private DataTable<String> table;
 
-    private String dictionaryDir;
+    private Path dictionaryDir;
 
     public void start() {
 
         close = DidoOmmIProvider
                 .with()
                 .port(port)
+                .dictionaryDir(dictionaryDir)
                 .from(Objects.requireNonNull(
                         table, "Data Table Required"));
     }
@@ -49,6 +51,14 @@ public class EmaIProviderService {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public Path getDictionaryDir() {
+        return dictionaryDir;
+    }
+
+    public void setDictionaryDir(Path dictionaryDir) {
+        this.dictionaryDir = dictionaryDir;
     }
 
     public DataTable<String> getTable() {
