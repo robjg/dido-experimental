@@ -25,7 +25,7 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
     private static final Logger logger = LoggerFactory.getLogger(DidoOmmIProvider.class);
 
-    public static final int FRAGMENTATION_SIZE = 256;
+    public static final int FRAGMENTATION_SIZE = 96000;
 
     private final Map<String, Set<Long>> handles = new HashMap<>();
 
@@ -83,8 +83,7 @@ public class DidoOmmIProvider implements OmmProviderClient {
                     dictionary, didoToOmm, dataTable);
 
             OmmIProviderConfig config = EmaFactory.createOmmIProviderConfig()
-                    //.adminControlDictionary(OmmIProviderConfig.AdminControl.USER_CONTROL)
-                    ;
+                    .adminControlDictionary(OmmIProviderConfig.AdminControl.USER_CONTROL);
             logger.info("Creating config {}", config);
 
             String portStr = port == 0 ? "14002" : Integer.toString(port);
@@ -140,6 +139,15 @@ public class DidoOmmIProvider implements OmmProviderClient {
     }
 
     public void onReissue(ReqMsg reqMsg, OmmProviderEvent event) {
+        switch (reqMsg.domainType())
+        {
+            case EmaRdm.MMT_DICTIONARY:
+                processDictionaryRequest(reqMsg, event);
+                break;
+            default:
+                processInvalidItemRequest(reqMsg, event);
+                break;
+        }
     }
 
     public void onClose(ReqMsg reqMsg, OmmProviderEvent event) {
@@ -176,7 +184,8 @@ public class DidoOmmIProvider implements OmmProviderClient {
             currentValue = dataDictionary.minFid();
 
             while (!done) {
-                currentValue = dataDictionary.encodeFieldDictionary(series, currentValue, reqMsg.filter(), FRAGMENTATION_SIZE);
+                currentValue = dataDictionary.encodeFieldDictionary(
+                        series, currentValue, reqMsg.filter(), FRAGMENTATION_SIZE);
 
                 done = currentValue == dataDictionary.maxFid();
 
@@ -194,8 +203,8 @@ public class DidoOmmIProvider implements OmmProviderClient {
             currentValue = 0;
 
             while (!done) {
-                currentValue = dataDictionary.encodeEnumTypeDictionary(series,
-                        currentValue, reqMsg.filter(), FRAGMENTATION_SIZE);
+                currentValue = dataDictionary.encodeEnumTypeDictionary(
+                        series, currentValue, reqMsg.filter(), FRAGMENTATION_SIZE);
 
                 done = currentValue == dataDictionary.enumTables().size();
 

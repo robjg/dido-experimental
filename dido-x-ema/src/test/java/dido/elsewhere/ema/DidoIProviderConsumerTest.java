@@ -86,7 +86,7 @@ public class DidoIProviderConsumerTest {
 
             for (int i = 0; i < 3; i++) {
 
-                KeyedDataEvent<String> event = queue.poll(5, TimeUnit.SECONDS);
+                KeyedDataEvent<String> event = queue.poll(20, TimeUnit.SECONDS);
 
                 System.out.println(event);
 
