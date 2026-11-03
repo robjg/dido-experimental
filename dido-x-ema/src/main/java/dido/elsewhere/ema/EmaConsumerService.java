@@ -28,6 +28,8 @@ public class EmaConsumerService {
      */
     private String name;
 
+    private Path configPath;
+
     /**
      * @oddjob.description The host address in server:port format.
      * @oddjob.required No. See LSEG docs for defaults.
@@ -90,13 +92,14 @@ public class EmaConsumerService {
 
         KeyPublisher<String> keyAvailability = new KeyPublisher<String>() {
             @Override
-            public QuietlyCloseable subscribeKeyAvailability(KeyConsumer<? super String> keyConsumer) {
-                symbols.forEach(keyConsumer::onAvailable);
+            public QuietlyCloseable subscribeKeys(KeyConsumer<? super String> keyConsumer) {
+                symbols.forEach(keyConsumer::onKey);
                 return () -> {};
             }
         };
 
         this.close = DidoOmmConsumer.with()
+                .configPath(configPath)
                 .host(host)
                 .serviceName(serviceName)
                 .dictionaryDir(dictionaryDir)
@@ -117,6 +120,14 @@ public class EmaConsumerService {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Path getConfigPath() {
+        return configPath;
+    }
+
+    public void setConfigPath(Path configPath) {
+        this.configPath = configPath;
     }
 
     public String getHost() {

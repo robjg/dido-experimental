@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EmaConfig>
+
+
+<!-- IProviderGroup provides set of detailed configurations to be used by named providers                -->
+<!-- Application specifies which configuration to use by setting OmmIProviderConfig::providerName()      -->
+<IProviderGroup>
+    <!-- DefaultIProvider parameter defines which provider configuration is used by OmmProvider          -->
+    <!-- if application does not specify it through OmmIProviderConfig::providerName()                   -->
+    <!-- first provider on the IProviderList is a default provider if this parameter is not specified    -->
+    <DefaultIProvider value="Provider_1"/>
+    <IProviderList>
+		<IProvider>
+			<!-- Name is mandatory                                                                       -->
+			<Name value="Provider_1"/>
+			<!-- Server is optional: defaulted to "RSSL_SOCKET + 14002"                                  -->
+			<Server value="Server_1"/>
+			<ItemCountHint value="10000"/>
+			<ServiceCountHint value="10000" />
+			<DispatchTimeoutApiThread value="500" />
+			<MaxDispatchCountApiThread value="500" />
+			<MaxDispatchCountUserThread value="500" />
+			<RefreshFirstRequired value="1" />
+		</IProvider>
+    </IProviderList>
+</IProviderGroup>
+
+<ServerGroup>
+    <ServerList>
+		<Server>
+			<Name value="Server_1"/>
+			<ServerType value="ServerType::RSSL_SOCKET"/>
+			<!-- CompressionType is optional: defaulted to None -->
+			<!-- possible values: None, ZLib, LZ4 -->
+			<CompressionType value="CompressionType::None"/>
+			<GuaranteedOutputBuffers value="5000"/>
+			<!-- ConnectionPingTimeout is optional: defaulted to 30000 -->
+			<ConnectionPingTimeout value="30000"/>
+			<!-- TcpNodelay is optional: defaulted to 1 -->
+			<!-- possible values: 1 (tcp_nodelay option set), 0 (tcp_nodelay not set) -->
+			<TcpNodelay value="1"/>
+			<Port value="14002"/>
+		</Server>
+    </ServerList>
+</ServerGroup>
+
+
+</EmaConfig>

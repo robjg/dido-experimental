@@ -48,13 +48,13 @@ public class SubscriberUtil {
         };
     }
 
-    public static <K> DidoPublisher didoPublisherFrom(KeyedDataPublisher<K> keyedPublisher,
-                                                      Function<? super K, ? extends DidoData> keyComposer) {
+    public static <K> DidoDataPublisher didoPublisherFrom(KeyedDataPublisher<K> keyedPublisher,
+                                                          Function<? super K, ? extends DidoData> keyComposer) {
 
-        return new DidoPublisher() {
+        return new DidoDataPublisher() {
 
             @Override
-            public DidoSubscription subscribe(DidoDataConsumer subscriber) {
+            public DidoSubscription subscribeDataData(DidoDataConsumer subscriber) {
 
                 KeyedDataConsumer<K> keyedSubscriber = new KeyedDataConsumer<K>() {
                     @Override
@@ -73,7 +73,7 @@ public class SubscriberUtil {
                     }
                 };
 
-                return keyedPublisher.subscribe(keyedSubscriber);
+                return keyedPublisher.subscribeKeyedData(keyedSubscriber);
             }
         };
     }

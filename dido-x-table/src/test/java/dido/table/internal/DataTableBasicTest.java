@@ -44,12 +44,12 @@ class DataTableBasicTest {
         final List<String> results = new ArrayList<>();
 
         @Override
-        public void onAvailable(Integer key) {
+        public void onKey(Integer key) {
             results.add("onAvailable: " + key);
         }
 
         @Override
-        public void onRemoved(Integer key) {
+        public void onDelete(Integer key) {
             results.add("onRemoved: " + key);
         }
     }
@@ -110,7 +110,7 @@ class DataTableBasicTest {
                 test, schema);
 
         KeyRecorder keyRecorder = new KeyRecorder();
-        QuietlyCloseable keyClose = test.subscribeKeyAvailability(keyRecorder);
+        QuietlyCloseable keyClose = test.subscribeKeys(keyRecorder);
 
         DidoData.withSchema(schema).many()
                 .of(1, "Apple", 7)
@@ -122,7 +122,7 @@ class DataTableBasicTest {
         keyRecorder.results.clear();
 
         Recorder recorder = new Recorder();
-        QuietlyCloseable close = test.subscribe(recorder);
+        QuietlyCloseable close = test.subscribeKeyedData(recorder);
 
         didoSubscriber.onData(DidoData.withSchema(schema).of(2, "Pear", 14));
 

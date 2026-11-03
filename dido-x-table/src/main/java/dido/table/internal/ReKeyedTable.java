@@ -88,7 +88,7 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
         existingTable.entrySet().forEach(
                 e -> existingSubscriber.onData(e.getKey(), e.getValue()));
 
-        table.closeables.add(existingTable.subscribe(existingSubscriber));
+        table.closeables.add(existingTable.subscribeKeyedData(existingSubscriber));
 
         return table;
     }
@@ -138,7 +138,7 @@ class ReKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
     }
 
     @Override
-    public DidoSubscription subscribe(KeyedDataConsumer<? super K1> consumer) {
+    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K1> consumer) {
         return subscribers.addSubscriber(consumer);
     }
 

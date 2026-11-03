@@ -39,13 +39,8 @@ class ConcurrentTableBasicTest {
         }
 
         @Override
-        public void onAvailable(Integer key) {
+        public void onKey(Integer key) {
             results.add("onAvailable: " + key);
-        }
-
-        @Override
-        public void onRemoved(Integer key) {
-            results.add("onRemoved: " + key);
         }
     }
 
@@ -102,7 +97,7 @@ class ConcurrentTableBasicTest {
         ConcurrentTableBasic<Integer> test = ConcurrentTableBasic.create(schema);
 
         Recorder recorder = new Recorder();
-        QuietlyCloseable keyClose = test.subscribeKeyAvailability(recorder);
+        QuietlyCloseable keyClose = test.subscribeKeys(recorder);
 
         DidoDataConsumer didoSubscriber = SubscriberUtil.didoSubscriberFrom(
                 test, schema);
@@ -116,7 +111,7 @@ class ConcurrentTableBasicTest {
         assertThat(recorder.results, contains("onAvailable: 1", "onAvailable: 5",  "onAvailable: 3"));
         recorder.results.clear();
 
-        QuietlyCloseable close = test.subscribe(recorder);
+        QuietlyCloseable close = test.subscribeKeyedData(recorder);
 
         didoSubscriber.onData(DidoData.withSchema(schema).of(2, "Pear", 14));
 
@@ -133,7 +128,7 @@ class ConcurrentTableBasicTest {
 
         didoSubscriber.onDelete(DidoData.withSchema(SubSchema.from(schema).withIndices(1)).of(3));
 
-        assertThat(recorder.results, contains("onRemoved: 3", "onDelete: 3"));
+        assertThat(recorder.results, contains("onDelete: 3", "onDelete: 3"));
         recorder.results.clear();
 
         close.close();

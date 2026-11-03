@@ -18,12 +18,12 @@ class KeySubscribersTest {
         List<String> results = new ArrayList<>();
 
         @Override
-        public void onAvailable(Object key) {
+        public void onKey(Object key) {
             results.add("Insert: " + key.toString());
         }
 
         @Override
-        public void onRemoved(Object key) {
+        public void onDelete(Object key) {
             results.add("Delete: " + key.toString());
         }
     }
@@ -34,38 +34,38 @@ class KeySubscribersTest {
         KeySubscribers<String> keySubscribers = new KeySubscribers<>();
         assertThat(keySubscribers.hasSubscribers(), is(false));
 
-        keySubscribers.onAvailable("A");
+        keySubscribers.onKey("A");
 
         Results results1 = new Results();
         QuietlyCloseable close1 = keySubscribers.addKeySubscriber(results1);
 
         assertThat(keySubscribers.hasSubscribers(), is(true));
 
-        keySubscribers.onAvailable("B");
+        keySubscribers.onKey("B");
 
         Results results2 = new Results();
         QuietlyCloseable close2 = keySubscribers.addKeySubscriber(results2);
 
-        keySubscribers.onAvailable("C");
+        keySubscribers.onKey("C");
 
         Results results3 = new Results();
         QuietlyCloseable close3 = keySubscribers.addKeySubscriber(results3);
 
-        keySubscribers.onAvailable("D");
+        keySubscribers.onKey("D");
 
         close1.close();
 
-        keySubscribers.onRemoved("A");
+        keySubscribers.onDelete("A");
 
         close3.close();
 
-        keySubscribers.onRemoved("B");
+        keySubscribers.onDelete("B");
 
         close2.close();
 
         assertThat(keySubscribers.hasSubscribers(), is(false));
 
-        keySubscribers.onRemoved("C");
+        keySubscribers.onDelete("C");
 
         assertThat(results1.results, contains("Insert: B", "Insert: C", "Insert: D"));
 

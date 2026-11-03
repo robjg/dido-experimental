@@ -3,7 +3,8 @@
     <job>
         <bus:bus xmlns:bus="oddjob:beanbus">
             <of>
-                <lseg:ema-consumer host="localhost:14002" id="consumer" serviceName="DIRECT_FEED" xmlns:lseg="oddjob:lseg">
+                <lseg:ema-consumer configPath="${oddjob.dir}/../config/EmaConfigConsumer.xml"
+                                   host="localhost:14002" id="consumer" serviceName="DIRECT_FEED" xmlns:lseg="oddjob:lseg">
                     <schema>
                         <value value="#{Java.type('dido.elsewhere.ema.TickingTableService').SCHEMA}"/>
                     </schema>

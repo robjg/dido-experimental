@@ -53,7 +53,7 @@ class DataTableTest {
 
         Recorder recorder = new Recorder();
 
-        DidoSubscription subscription = test.subscribe(recorder);
+        DidoSubscription subscription = test.subscribeKeyedData(recorder);
 
         assertThat(subscription.getSchema(), is(schema));
 

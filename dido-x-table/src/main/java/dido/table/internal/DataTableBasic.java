@@ -69,12 +69,12 @@ public class DataTableBasic<K extends Comparable<K>>
     }
 
     @Override
-    public QuietlyCloseable subscribeKeyAvailability(KeyConsumer<? super K> keyConsumer) {
+    public QuietlyCloseable subscribeKeys(KeyConsumer<? super K> keyConsumer) {
         return keySubscribers.addKeySubscriber(keyConsumer);
     }
 
     @Override
-    public DidoSubscription subscribe(KeyedDataConsumer<? super K> consumer) {
+    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer) {
         return dataSubscribers.addSubscriber(consumer);
     }
 
@@ -85,7 +85,7 @@ public class DataTableBasic<K extends Comparable<K>>
         if (row == null) {
             row = dataHelper.copy(data);
             rows.put(key, row);
-            keySubscribers.onAvailable(key);
+            keySubscribers.onKey(key);
         }
         else {
             dataHelper.update(data, row);
@@ -122,7 +122,7 @@ public class DataTableBasic<K extends Comparable<K>>
         if (row == null) {
             throw new IllegalArgumentException("No row for key " + key);
         }
-        keySubscribers.onRemoved(key);
+        keySubscribers.onDelete(key);
         dataSubscribers.onDelete(key);
     }
 }

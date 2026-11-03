@@ -36,16 +36,16 @@ public class KeySubscribers<K> implements KeyConsumer<K> {
     }
 
     @Override
-    public void onAvailable(K key) {
+    public void onKey(K key) {
         if (existingKey != null) {
-            existingKey.onAvailable(key);
+            existingKey.onKey(key);
         }
     }
 
     @Override
-    public void onRemoved(K key) {
+    public void onDelete(K key) {
         if (existingKey != null) {
-            existingKey.onRemoved(key);
+            existingKey.onDelete(key);
         }
     }
 
@@ -69,13 +69,13 @@ public class KeySubscribers<K> implements KeyConsumer<K> {
         private final List<KeyConsumer<? super K>> consumers = new ArrayList<>();
 
         @Override
-        public void onAvailable(K key) {
-            consumers.forEach(c -> c.onAvailable(key));
+        public void onKey(K key) {
+            consumers.forEach(c -> c.onKey(key));
         }
 
         @Override
-        public void onRemoved(K key) {
-            consumers.forEach(c -> c.onRemoved(key));
+        public void onDelete(K key) {
+            consumers.forEach(c -> c.onDelete(key));
         }
     }
 }

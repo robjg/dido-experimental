@@ -140,7 +140,7 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
     }
 
     @Override
-    public DidoSubscription subscribe(KeyedDataConsumer<? super K> consumer) {
+    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer) {
         return subscribers.addSubscriber(consumer);
     }
 

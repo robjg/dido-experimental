@@ -17,6 +17,8 @@ import java.util.*;
 import java.util.Map;
 import java.util.function.Function;
 
+;
+
 /**
  * Create an Omm Interactive Provider using the EMA library for providing
  * OMM MarketPrice price date to the Advanced Distribution Hub.
@@ -33,44 +35,71 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
     private final DidoToOmm didoToOmm;
 
-    private final RefreshMsg refreshMsg = EmaFactory.createRefreshMsg();
+    private final RefreshMsg refreshMsg;
 
     private final DataTable<String> dataTable;
 
-    public DidoOmmIProvider(DataDictionary dataDictionary,
+    private final DirectoryRequestProcessor directoryRequestProcessor;
+
+    private final SymbolListProcessor symbolListProcessor;
+
+    public DidoOmmIProvider(String serviceName,
+                            DataDictionary dataDictionary,
                             DidoToOmm didoToOmm,
                             DataTable<String> dataTable) {
         this.dataDictionary = dataDictionary;
         this.didoToOmm = didoToOmm;
         this.dataTable = dataTable;
+        this.refreshMsg = EmaFactory.createRefreshMsg();
+        this.symbolListProcessor = new SymbolListProcessor("INDEX", serviceName, dataTable, refreshMsg);
+        this.directoryRequestProcessor = new DirectoryRequestProcessor(serviceName);
     }
 
     public static class Settings {
 
-        private String name;
-
         private int port;
 
-        private Path dictionaryDir;
+        private Path configPath;
+
+        private Path fieldDictionaryPath;
+
+        private Path enumTypeDictionaryPath;
+
+        private String serviceName;
 
         public Settings port(int port) {
             this.port = port;
             return this;
         }
 
-        public Settings dictionaryDir(Path dictionaryDir) {
-            this.dictionaryDir = dictionaryDir;
+        public Settings configPath(Path configPath) {
+            this.configPath = configPath;
+            return this;
+        }
+
+        public Settings serviceName(String serviceName) {
+            this.serviceName = serviceName;
+            return this;
+        }
+
+        public Settings fieldDictionaryPath(Path fieldDictionaryPath) {
+            this.fieldDictionaryPath = fieldDictionaryPath;
+            return this;
+        }
+
+        public Settings enumTypeDictionaryPath(Path enumTypeDictionaryPath) {
+            this.enumTypeDictionaryPath = enumTypeDictionaryPath;
             return this;
         }
 
         public QuietlyCloseable from(DataTable<String> dataTable) {
 
-            Path dictionaryDir = Objects.requireNonNullElse(
-                    this.dictionaryDir, Path.of("."));
-            Path dictionaryFile = dictionaryDir
-                    .resolve("RDMFieldDictionary");
-            Path enumTypeFile = dictionaryDir
-                    .resolve("enumtype.def");
+            String serviceName = Objects.requireNonNullElse(this.serviceName, "DIRECT_FEED");
+
+            Path dictionaryFile = Objects.requireNonNullElse(fieldDictionaryPath,
+                    Path.of("./RDMFieldDictionary"));
+            Path enumTypeFile = Objects.requireNonNullElse(enumTypeDictionaryPath,
+                    Path.of("./enumtype.def"));
             DataDictionary dictionary = EmaFactory.createDataDictionary();
             logger.info("Loading Data Dictionary from {}", dictionaryFile);
             dictionary.loadFieldDictionary(dictionaryFile.toString());
@@ -79,18 +108,30 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
             DidoToOmm didoToOmm = DidoToOmm.forSchema(dataTable.getSchema(), dictionary);
 
-            DidoOmmIProvider appClient = new DidoOmmIProvider(
+            DidoOmmIProvider appClient = new DidoOmmIProvider(serviceName,
                     dictionary, didoToOmm, dataTable);
 
-            OmmIProviderConfig config = EmaFactory.createOmmIProviderConfig()
+            OmmIProviderConfig config;
+            if (configPath == null) {
+                logger.info("Creating default OmmIProviderConfig");
+                config = EmaFactory.createOmmIProviderConfig();
+            }
+            else {
+                logger.info("Creating OmmIProviderConfig from {}", configPath);
+                config = EmaFactory.createOmmIProviderConfig(configPath.toString());
+            }
+
+            config = config
+                    .adminControlDirectory(OmmIProviderConfig.AdminControl.USER_CONTROL)
                     .adminControlDictionary(OmmIProviderConfig.AdminControl.USER_CONTROL);
-            logger.info("Creating config {}", config);
 
-            String portStr = port == 0 ? "14002" : Integer.toString(port);
+            if (port > 0) {
+                config = config.port(Integer.toString(port));
+                logger.info("Setting port to {}", port);
+            }
 
-            logger.info("Creating provider on port {}", portStr);
+            OmmProvider provider = EmaFactory.createOmmProvider(config, appClient);
 
-            OmmProvider provider = EmaFactory.createOmmProvider(config.port(portStr), appClient);
 
             DidoSubscription subscription = appClient.init(provider);
 
@@ -106,10 +147,12 @@ public class DidoOmmIProvider implements OmmProviderClient {
     }
 
     DidoSubscription init(OmmProvider provider) {
-        return dataTable.subscribe(new DataForwarder(provider));
+        return dataTable.subscribeKeyedData(new DataForwarder(provider));
     }
 
     public void onReqMsg(ReqMsg reqMsg, OmmProviderEvent event) {
+        logger.info("onReqMsg {}", reqMsg);
+
         switch (reqMsg.domainType()) {
             case EmaRdm.MMT_LOGIN:
                 processLoginRequest(reqMsg, event);
@@ -117,8 +160,14 @@ public class DidoOmmIProvider implements OmmProviderClient {
             case EmaRdm.MMT_MARKET_PRICE:
                 processMarketPriceRequest(reqMsg, event);
                 break;
+            case EmaRdm.MMT_DIRECTORY:
+                directoryRequestProcessor.processRequest(reqMsg, event);
+                break;
             case EmaRdm.MMT_DICTIONARY:
                 processDictionaryRequest(reqMsg, event);
+                break;
+            case EmaRdm.MMT_SYMBOL_LIST:
+                symbolListProcessor.processRequest(reqMsg, event);
                 break;
             default:
                 processInvalidItemRequest(reqMsg, event);
@@ -127,15 +176,19 @@ public class DidoOmmIProvider implements OmmProviderClient {
     }
 
     public void onRefreshMsg(RefreshMsg refreshMsg, OmmProviderEvent event) {
+        logger.info("onRefreshMsg {}", refreshMsg);
     }
 
     public void onStatusMsg(StatusMsg statusMsg, OmmProviderEvent event) {
+        logger.info("onStatusMsg {}", statusMsg);
     }
 
     public void onGenericMsg(GenericMsg genericMsg, OmmProviderEvent event) {
+        logger.info("onGenericMsg {}", genericMsg);
     }
 
     public void onPostMsg(PostMsg postMsg, OmmProviderEvent event) {
+        logger.info("onPostMsg {}", postMsg);
     }
 
     public void onReissue(ReqMsg reqMsg, OmmProviderEvent event) {
@@ -158,6 +211,8 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
 
     void processLoginRequest(ReqMsg reqMsg, OmmProviderEvent event) {
+        logger.info("processLoginRequest for user {}", reqMsg.name());
+
         event.provider()
                 .submit(EmaFactory
                                 .createRefreshMsg()
@@ -220,6 +275,7 @@ public class DidoOmmIProvider implements OmmProviderClient {
             }
         }
     }
+
 
     void processMarketPriceRequest(ReqMsg reqMsg, OmmProviderEvent event) {
 

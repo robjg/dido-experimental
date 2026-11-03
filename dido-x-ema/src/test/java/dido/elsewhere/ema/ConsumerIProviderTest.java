@@ -66,7 +66,7 @@ class ConsumerIProviderTest {
 
         logger.info("** Subscribing to Ticks");
 
-        try (QuietlyCloseable ignored = clientTable.subscribe(new KeyedDataConsumer<>() {
+        try (QuietlyCloseable ignored = clientTable.subscribeKeyedData(new KeyedDataConsumer<>() {
             @Override
             public void onData(String key, DidoData data) {
             }

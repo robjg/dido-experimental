@@ -20,14 +20,20 @@ public class EmaIProviderService {
 
     private DataTable<String> table;
 
-    private Path dictionaryDir;
+    private Path configPath;
+
+    private Path fieldDictionaryPath;
+
+    private Path enumTypeDictionaryPath;
 
     public void start() {
 
         close = DidoOmmIProvider
                 .with()
                 .port(port)
-                .dictionaryDir(dictionaryDir)
+                .configPath(configPath)
+                .fieldDictionaryPath(fieldDictionaryPath)
+                .enumTypeDictionaryPath(enumTypeDictionaryPath)
                 .from(Objects.requireNonNull(
                         table, "Data Table Required"));
     }
@@ -53,12 +59,28 @@ public class EmaIProviderService {
         this.port = port;
     }
 
-    public Path getDictionaryDir() {
-        return dictionaryDir;
+    public Path getConfigPath() {
+        return configPath;
     }
 
-    public void setDictionaryDir(Path dictionaryDir) {
-        this.dictionaryDir = dictionaryDir;
+    public void setConfigPath(Path configPath) {
+        this.configPath = configPath;
+    }
+
+    public Path getFieldDictionaryPath() {
+        return fieldDictionaryPath;
+    }
+
+    public void setFieldDictionaryPath(Path fieldDictionaryPath) {
+        this.fieldDictionaryPath = fieldDictionaryPath;
+    }
+
+    public Path getEnumTypeDictionaryPath() {
+        return enumTypeDictionaryPath;
+    }
+
+    public void setEnumTypeDictionaryPath(Path enumTypeDictionaryPath) {
+        this.enumTypeDictionaryPath = enumTypeDictionaryPath;
     }
 
     public DataTable<String> getTable() {

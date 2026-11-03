@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -32,6 +33,10 @@ public class DidoIProviderConsumerTest {
             .addNamed("BIDSIZE", int.class)
             .addNamed("ASKSIZE", int.class)
             .build();
+
+    Path providerConfigPath = Path.of("src/test/resources/config/EmaConfigIProvider.xml");
+    Path fieldDictionaryPath = Path.of("src/test/resources/dictionary/RDMTinyDictionary");
+    Path enumTypeDictionaryPath = Path.of("src/test/resources/dictionary/enumtype.def");
 
 
     @Test
@@ -67,6 +72,9 @@ public class DidoIProviderConsumerTest {
         int port = freePort();
 
         try (AutoCloseable providerClose = DidoOmmIProvider.with()
+                .configPath(providerConfigPath)
+                .fieldDictionaryPath(fieldDictionaryPath)
+                .enumTypeDictionaryPath(enumTypeDictionaryPath)
                 .port(port)
                 .from(table);
 

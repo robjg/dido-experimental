@@ -97,9 +97,9 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
         childTable.entrySet().forEach(
                 e -> childSubscriber.onData(e.getKey(), e.getValue()));
 
-        table.closeables.add(childTable.subscribe(childSubscriber));
+        table.closeables.add(childTable.subscribeKeyedData(childSubscriber));
 
-        table.closeables.add(referenceTable.subscribe(table.new ReferenceTableDidoSubscriber()));
+        table.closeables.add(referenceTable.subscribeKeyedData(table.new ReferenceTableDidoSubscriber()));
 
         return table;
     }
@@ -149,7 +149,7 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
     }
 
     @Override
-    public DidoSubscription subscribe(KeyedDataConsumer<? super K1> consumer) {
+    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K1> consumer) {
         return subscribers.addSubscriber(consumer);
     }
 

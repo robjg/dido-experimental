@@ -49,6 +49,8 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         private String serviceName;
 
+        private Path configPath;
+
         private Path dictionaryDir;
 
         private DataSchema schema;
@@ -70,6 +72,11 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         public Settings serviceName(String serviceName) {
             this.serviceName = serviceName;
+            return this;
+        }
+
+        public Settings configPath(Path configPath) {
+            this.configPath = configPath;
             return this;
         }
 
@@ -113,7 +120,16 @@ public class DidoOmmConsumer implements OmmConsumerClient {
             String serviceName = Objects.requireNonNull(this.serviceName,
                     "Service name cannot be null");
 
-            OmmConsumerConfig config = EmaFactory.createOmmConsumerConfig();
+            OmmConsumerConfig config;
+            if (configPath == null) {
+                logger.info("Creating default OmmConsumerConfig");
+                config = EmaFactory.createOmmConsumerConfig();
+            }
+            else {
+                logger.info("Creating OmmConsumerConfig from {}", configPath);
+                config = EmaFactory.createOmmConsumerConfig(configPath.toString());
+            }
+
             if (host != null) {
                 config = config.host(host);
             }
@@ -153,10 +169,10 @@ public class DidoOmmConsumer implements OmmConsumerClient {
             java.util.Map<String, Long> handles = new HashMap<>();
 
             @SuppressWarnings("resource")
-            QuietlyCloseable subscription = keyAvailability.subscribeKeyAvailability(new KeyConsumer<>() {
+            QuietlyCloseable subscription = keyAvailability.subscribeKeys(new KeyConsumer<>() {
 
                 @Override
-                public void onAvailable(String key) {
+                public void onKey(String key) {
 
                     long handle = consumer.registerClient(reqMsg.clear()
                                     .serviceName(serviceName)
@@ -167,7 +183,7 @@ public class DidoOmmConsumer implements OmmConsumerClient {
                 }
 
                 @Override
-                public void onRemoved(String key) {
+                public void onDelete(String key) {
                     consumer.unregister(handles.get(key));
                 }
             });
