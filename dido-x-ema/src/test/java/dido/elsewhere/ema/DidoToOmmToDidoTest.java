@@ -50,11 +50,11 @@ class DidoToOmmToDidoTest {
         FieldList flDec = JUnitTestConnect.createFieldList();
         JUnitTestConnect.setRsslData(flDec, fieldList, Codec.majorVersion(), Codec.minorVersion(), etaDictionary, null);
 
-        System.out.println("**");
+        System.out.println("** Local FieldList:");
         System.out.println(fieldList.toString(dictionary));
+        System.out.println("** Loaded FieldList:");
         System.out.println(flDec);
 
-        System.out.println(fieldList.toString(dictionary));
         List<FieldEntry> fieldEntries = new ArrayList<>();
         for (FieldEntry fieldEntry : flDec) {
             // toArray not supported so must do this.
@@ -87,12 +87,13 @@ class DidoToOmmToDidoTest {
         assertThat(f3.real().mantissa(), is(10L));
         assertThat(f3.real().asDouble(), is(10.0));
 
+        // Back to DidoData
+
         DidoOmmData didoOmmData = DidoOmmData.with()
                 .partialSchema(DataSchema.builder()
                         .addNamed("BIDSIZE", int.class)
                         .build())
                 .of(dictionary, flDec);
-
 
         DidoData copy = didoOmmData.data(flDec);
 

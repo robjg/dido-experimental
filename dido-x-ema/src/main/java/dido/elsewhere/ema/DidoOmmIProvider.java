@@ -17,8 +17,6 @@ import java.util.*;
 import java.util.Map;
 import java.util.function.Function;
 
-;
-
 /**
  * Create an Omm Interactive Provider using the EMA library for providing
  * OMM MarketPrice price date to the Advanced Distribution Hub.
@@ -43,14 +41,18 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
     private final SymbolListProcessor symbolListProcessor;
 
+    private final LegacyChain legacyChain;
+
     public DidoOmmIProvider(String serviceName,
                             DataDictionary dataDictionary,
                             DidoToOmm didoToOmm,
+                            LegacyChain legacyChain,
                             DataTable<String> dataTable) {
         this.dataDictionary = dataDictionary;
         this.didoToOmm = didoToOmm;
         this.dataTable = dataTable;
         this.refreshMsg = EmaFactory.createRefreshMsg();
+        this.legacyChain = legacyChain;
         this.symbolListProcessor = new SymbolListProcessor("INDEX", serviceName, dataTable, refreshMsg);
         this.directoryRequestProcessor = new DirectoryRequestProcessor(serviceName);
     }
@@ -66,6 +68,8 @@ public class DidoOmmIProvider implements OmmProviderClient {
         private Path enumTypeDictionaryPath;
 
         private String serviceName;
+
+        private LegacyChain legacyChain;
 
         public Settings port(int port) {
             this.port = port;
@@ -92,6 +96,11 @@ public class DidoOmmIProvider implements OmmProviderClient {
             return this;
         }
 
+        public Settings legacyChainProvider(LegacyChain legacyChain) {
+            this.legacyChain = legacyChain;
+            return this;
+        }
+
         public QuietlyCloseable from(DataTable<String> dataTable) {
 
             String serviceName = Objects.requireNonNullElse(this.serviceName, "DIRECT_FEED");
@@ -108,15 +117,21 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
             DidoToOmm didoToOmm = DidoToOmm.forSchema(dataTable.getSchema(), dictionary);
 
-            DidoOmmIProvider appClient = new DidoOmmIProvider(serviceName,
-                    dictionary, didoToOmm, dataTable);
+            LegacyChain legacyChain = Objects.requireNonNullElseGet(
+                    this.legacyChain, LegacyChain.NoOp::new);
+
+            DidoOmmIProvider appClient = new DidoOmmIProvider(
+                    serviceName,
+                    dictionary,
+                    didoToOmm,
+                    legacyChain,
+                    dataTable);
 
             OmmIProviderConfig config;
             if (configPath == null) {
                 logger.info("Creating default OmmIProviderConfig");
                 config = EmaFactory.createOmmIProviderConfig();
-            }
-            else {
+            } else {
                 logger.info("Creating OmmIProviderConfig from {}", configPath);
                 config = EmaFactory.createOmmIProviderConfig(configPath.toString());
             }
@@ -192,8 +207,7 @@ public class DidoOmmIProvider implements OmmProviderClient {
     }
 
     public void onReissue(ReqMsg reqMsg, OmmProviderEvent event) {
-        switch (reqMsg.domainType())
-        {
+        switch (reqMsg.domainType()) {
             case EmaRdm.MMT_DICTIONARY:
                 processDictionaryRequest(reqMsg, event);
                 break;
@@ -279,40 +293,44 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
     void processMarketPriceRequest(ReqMsg reqMsg, OmmProviderEvent event) {
 
-        String key = reqMsg.name();
+        String symbolName = reqMsg.name();
 
-        Set<Long> handleSet = handles.get(key);
+        Set<Long> handleSet = handles.get(symbolName);
 
         long handle = event.handle();
         if (handleSet != null && !handleSet.contains(handle)) {
             processInvalidItemRequest(reqMsg, event);
             return;
         } else {
-            handles.computeIfAbsent(key, k -> new HashSet<>())
+            handles.computeIfAbsent(symbolName, k -> new HashSet<>())
                     .add(handle);
         }
 
-        DidoData data = dataTable.get(key);
+        FieldList fieldList = legacyChain.chainFor(symbolName);
 
-        if (data == null) {
-            // TODO: What should we do here.
-            logger.info("No data with key {}", key);
-            return;
+        if (fieldList == null) {
+
+            DidoData data = dataTable.get(symbolName);
+
+            if (data == null) {
+                // TODO: What should we do here.
+                logger.info("No data with key {}", symbolName);
+                return;
+            }
+
+            fieldList = didoToOmm.apply(data);
         }
-
-        FieldList fieldList = didoToOmm.apply(data);
 
         logger.info("Processing Market Price request {}", reqMsg);
 
         event.provider().submit(EmaFactory.createRefreshMsg()
-                        .name(key)
+                        .name(symbolName)
                         .serviceId(reqMsg.serviceId())
                         .solicited(true)
                         .state(OmmState.StreamState.OPEN, OmmState.DataState.OK, OmmState.StatusCode.NONE, "Refresh Completed")
                         .payload(fieldList)
                         .complete(true),
                 handle);
-
     }
 
     void processInvalidItemRequest(ReqMsg reqMsg, OmmProviderEvent event) {
