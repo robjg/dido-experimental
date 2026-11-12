@@ -9,8 +9,7 @@ import com.refinitiv.ema.rdm.DictionaryEntry;
 import java.util.*;
 import java.util.function.Function;
 
-public class LegacyChainBasic
-        implements LegacyChain {
+public class LegacyChainBasic implements LegacyChainProvider {
 
     public static final Function<? super Integer, ? extends String> DEFAULT_N_TO_FIELD_FN =
             n -> "LINK_" + n;
@@ -99,7 +98,7 @@ public class LegacyChainBasic
         return new Settings();
     }
 
-    public static LegacyChain forDictionary(DataDictionary dictionary) {
+    public static LegacyChainProvider forDictionary(DataDictionary dictionary) {
         return with().forDictionary(dictionary);
     }
 
@@ -179,6 +178,15 @@ public class LegacyChainBasic
         }
     }
 
+    static int fieldId(DataDictionary dictionary, String fieldName) {
+
+        DictionaryEntry dictionaryEntry = Objects.requireNonNull(
+                dictionary.entry(fieldName), "No Field in dictionary " + fieldName);
+        return dictionaryEntry.fid();
+    }
+
+
+    /** Wraps a Fid and FieldEntry ready to be populated and sent */
     record FieldReady(int fid, FieldEntry fieldEntry) {
 
         FieldEntry ascii(String ascii) {
@@ -188,9 +196,6 @@ public class LegacyChainBasic
 
     static FieldReady field(DataDictionary dictionary, String fieldName) {
 
-        DictionaryEntry dictionaryEntry = Objects.requireNonNull(
-                dictionary.entry(fieldName), "No Field in dictionary " + fieldName);
-        int fid = dictionaryEntry.fid();
-        return new FieldReady(fid, EmaFactory.createFieldEntry());
+        return new FieldReady(fieldId(dictionary, fieldName), EmaFactory.createFieldEntry());
     }
 }

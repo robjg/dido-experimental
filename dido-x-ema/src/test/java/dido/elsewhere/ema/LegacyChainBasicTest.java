@@ -25,7 +25,7 @@ class LegacyChainBasicTest {
         dictionary.loadFieldDictionary(fieldDictionary);
         dictionary.loadEnumTypeDictionary(enumTypeDictionary);
 
-        LegacyChain legacyChain = LegacyChainBasic.with()
+        LegacyChainProvider legacyChain = LegacyChainBasic.with()
                 .symbolsPerRecord(2)
                 .forDictionary(dictionary);
 

@@ -28,6 +28,10 @@ public class EmaConsumerService {
      */
     private String name;
 
+    /**
+     * @oddjob.description The path to a config file.
+     * @oddjob.required No. See LSEG docs for defaults.
+     */
     private Path configPath;
 
     /**
@@ -35,6 +39,18 @@ public class EmaConsumerService {
      * @oddjob.required No. See LSEG docs for defaults.
      */
     private String host;
+
+    /**
+     * @oddjob.description The username if required.
+     * @oddjob.required No.
+     */
+    private String username;
+
+    /**
+     * @oddjob.description The password if required.
+     * @oddjob.required No.
+     */
+    private String password;
 
     /**
      * @oddjob.description The service name to request data from.
@@ -101,6 +117,8 @@ public class EmaConsumerService {
         this.close = DidoOmmConsumer.with()
                 .configPath(configPath)
                 .host(host)
+                .username(username)
+                .password(password)
                 .serviceName(serviceName)
                 .dictionaryDir(dictionaryDir)
                 .schema(schema)
@@ -136,6 +154,22 @@ public class EmaConsumerService {
 
     public void setHost(String host) {
         this.host = host;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getServiceName() {

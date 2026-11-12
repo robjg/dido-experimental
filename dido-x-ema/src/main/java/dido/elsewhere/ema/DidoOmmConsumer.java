@@ -168,6 +168,9 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
             java.util.Map<String, Long> handles = new HashMap<>();
 
+
+
+
             @SuppressWarnings("resource")
             QuietlyCloseable subscription = keyAvailability.subscribeKeys(new KeyConsumer<>() {
 
@@ -280,11 +283,11 @@ public class DidoOmmConsumer implements OmmConsumerClient {
     }
 
     public void onStatusMsg(StatusMsg statusMsg, OmmConsumerEvent event) {
-        logger.info("onUpdateMsg: Ignoring {}", statusMsg);
+        logger.info("onStatusMsg: Ignoring {}", statusMsg);
     }
 
     public void onGenericMsg(GenericMsg genericMsg, OmmConsumerEvent consumerEvent) {
-        logger.info("onGenricMsg: Ignoring {}", genericMsg);
+        logger.info("onGenericMsg: Ignoring {}", genericMsg);
     }
 
     public void onAckMsg(AckMsg ackMsg, OmmConsumerEvent consumerEvent) {

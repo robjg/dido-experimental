@@ -3,11 +3,11 @@ package dido.elsewhere.ema;
 import com.refinitiv.ema.access.FieldList;
 import dido.flow.KeyConsumer;
 
-public interface LegacyChain extends KeyConsumer<String> {
+public interface LegacyChainProvider extends KeyConsumer<String> {
 
     FieldList chainFor(String chainName);
 
-    class NoOp implements LegacyChain {
+    class NoOp implements LegacyChainProvider {
         @Override
         public FieldList chainFor(String chainName) {
             return null;

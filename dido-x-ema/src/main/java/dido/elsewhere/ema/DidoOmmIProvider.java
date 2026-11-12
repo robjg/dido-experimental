@@ -41,12 +41,12 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
     private final SymbolListProcessor symbolListProcessor;
 
-    private final LegacyChain legacyChain;
+    private final LegacyChainProvider legacyChain;
 
     public DidoOmmIProvider(String serviceName,
                             DataDictionary dataDictionary,
                             DidoToOmm didoToOmm,
-                            LegacyChain legacyChain,
+                            LegacyChainProvider legacyChain,
                             DataTable<String> dataTable) {
         this.dataDictionary = dataDictionary;
         this.didoToOmm = didoToOmm;
@@ -69,7 +69,7 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
         private String serviceName;
 
-        private LegacyChain legacyChain;
+        private LegacyChainProvider legacyChain;
 
         public Settings port(int port) {
             this.port = port;
@@ -96,7 +96,7 @@ public class DidoOmmIProvider implements OmmProviderClient {
             return this;
         }
 
-        public Settings legacyChainProvider(LegacyChain legacyChain) {
+        public Settings legacyChainProvider(LegacyChainProvider legacyChain) {
             this.legacyChain = legacyChain;
             return this;
         }
@@ -117,8 +117,8 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
             DidoToOmm didoToOmm = DidoToOmm.forSchema(dataTable.getSchema(), dictionary);
 
-            LegacyChain legacyChain = Objects.requireNonNullElseGet(
-                    this.legacyChain, LegacyChain.NoOp::new);
+            LegacyChainProvider legacyChain = Objects.requireNonNullElseGet(
+                    this.legacyChain, LegacyChainProvider.NoOp::new);
 
             DidoOmmIProvider appClient = new DidoOmmIProvider(
                     serviceName,
