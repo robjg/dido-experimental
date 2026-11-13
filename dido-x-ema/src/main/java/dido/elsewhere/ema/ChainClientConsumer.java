@@ -4,7 +4,10 @@ import com.refinitiv.ema.access.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class ChainClientConsumer implements OmmConsumerClient {
+import java.util.HashSet;
+import java.util.Set;
+
+class ChainClientConsumer implements OmmConsumerClient, AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(ChainClientConsumer.class);
 
@@ -15,6 +18,8 @@ class ChainClientConsumer implements OmmConsumerClient {
     private final String serviceName;
 
     private final LegacyChainConsumer chainConsumer;
+
+    private final Set<Long> handles = new HashSet<>();
 
     ChainClientConsumer(OmmConsumer consumer, String serviceName,
                         LegacyChainConsumer chainConsumer) {
@@ -29,8 +34,15 @@ class ChainClientConsumer implements OmmConsumerClient {
                         .serviceName(serviceName)
                         .name(chainName),
                 this);
+
+        handles.add(handle);
     }
 
+    @Override
+    public void close() {
+
+        handles.forEach(consumer::unregister);
+    }
 
     @Override
     public void onRefreshMsg(RefreshMsg refreshMsg, OmmConsumerEvent consumerEvent) {

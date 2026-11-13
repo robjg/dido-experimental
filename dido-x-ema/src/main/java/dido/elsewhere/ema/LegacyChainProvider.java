@@ -8,6 +8,7 @@ public interface LegacyChainProvider extends KeyConsumer<String> {
     FieldList chainFor(String chainName);
 
     class NoOp implements LegacyChainProvider {
+
         @Override
         public FieldList chainFor(String chainName) {
             return null;

@@ -4,18 +4,12 @@ import com.refinitiv.ema.access.EmaFactory;
 import com.refinitiv.ema.access.FieldEntry;
 import com.refinitiv.ema.access.FieldList;
 import com.refinitiv.ema.rdm.DataDictionary;
-import com.refinitiv.ema.rdm.DictionaryEntry;
 
 import java.util.*;
 import java.util.function.Function;
 
-public class LegacyChainBasic implements LegacyChainProvider {
-
-    public static final Function<? super Integer, ? extends String> DEFAULT_N_TO_FIELD_FN =
-            n -> "LINK_" + n;
-
-    public static final Function<? super Integer, ? extends String> DEFAULT_I_TO_CHAIN_FN =
-            n -> n + "#.INDEX";
+public class LegacyChainIndexProvider extends LegacyChainIndex
+        implements LegacyChainProvider {
 
     public final Function<? super Integer, ? extends String> iToChain = DEFAULT_I_TO_CHAIN_FN;
 
@@ -35,42 +29,40 @@ public class LegacyChainBasic implements LegacyChainProvider {
 
     int lastIndex = 0;
 
-    private LegacyChainBasic(Settings settings,
-                             FieldReady prevLrField,
-                             FieldReady nextLrField,
-                             int symbolsPerRecord,
-                             List<FieldReady> fieldEntries
+    private LegacyChainIndexProvider(Settings settings,
+                                     FieldReady prevLrField,
+                                     FieldReady nextLrField,
+                                     int symbolsPerRecord,
+                                     List<FieldReady> fieldEntries
     ) {
+        super(settings);
         this.prevLrField = prevLrField;
         this.nextLrField = nextLrField;
         this.symbolsPerRecord = symbolsPerRecord;
         this.fieldEntries = fieldEntries;
     }
 
-    public static class Settings {
-
-        private String prevLrName;
-
-        private String nextLrName;
+    public static class Settings extends LegacyChainIndex.Settings<Settings> {
 
         private int symbolsPerRecord;
 
         private Function<? super Integer, ? extends String> nToField;
+
+        Settings self() {
+            return this;
+        }
+
 
         public Settings symbolsPerRecord(int symbolsPerRecord) {
             this.symbolsPerRecord = symbolsPerRecord;
             return this;
         }
 
-        public LegacyChainBasic forDictionary(DataDictionary dictionary) {
+        public LegacyChainIndexProvider forDictionary(DataDictionary dictionary) {
 
-            FieldReady prevLrField = field(dictionary,
-                    Objects.requireNonNullElse(
-                            this.prevLrName, "PREV_LR"));
+            FieldReady prevLrField = field(dictionary, prevLinkName());
 
-            FieldReady nextLrField = field(dictionary,
-                    Objects.requireNonNullElse(
-                            this.prevLrName, "NEXT_LR"));
+            FieldReady nextLrField = field(dictionary, nextLinkName());
 
             Function<? super Integer, ? extends String> nToField =
                     Objects.requireNonNullElse(this.nToField, DEFAULT_N_TO_FIELD_FN);
@@ -86,7 +78,7 @@ public class LegacyChainBasic implements LegacyChainProvider {
                 fieldEntries.add(field(dictionary, fieldName));
             }
 
-            return new LegacyChainBasic(this,
+            return new LegacyChainIndexProvider(this,
                     prevLrField,
                     nextLrField,
                     symbolsPerRecord,
@@ -177,14 +169,6 @@ public class LegacyChainBasic implements LegacyChainProvider {
             return symbolToFid.size();
         }
     }
-
-    static int fieldId(DataDictionary dictionary, String fieldName) {
-
-        DictionaryEntry dictionaryEntry = Objects.requireNonNull(
-                dictionary.entry(fieldName), "No Field in dictionary " + fieldName);
-        return dictionaryEntry.fid();
-    }
-
 
     /** Wraps a Fid and FieldEntry ready to be populated and sent */
     record FieldReady(int fid, FieldEntry fieldEntry) {

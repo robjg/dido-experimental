@@ -2,6 +2,7 @@ package dido.elsewhere.ema;
 
 import com.refinitiv.ema.access.FieldEntry;
 import com.refinitiv.ema.access.FieldList;
+import com.refinitiv.ema.rdm.DataDictionary;
 import dido.flow.KeyConsumer;
 import dido.flow.QuietlyCloseable;
 import dido.flow.util.KeySubscribers;
@@ -12,7 +13,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public class LegacyChainBasicConsumer implements LegacyChainConsumer {
+public class LegacyChainIndexConsumer extends LegacyChainIndex
+        implements LegacyChainConsumer {
 
     private final KeySubscribers<String> keySubscribers =  new KeySubscribers<>();
 
@@ -22,10 +24,36 @@ public class LegacyChainBasicConsumer implements LegacyChainConsumer {
 
     private final Map<String, Set<String>> chainRecords = new HashMap<>();
 
-    public LegacyChainBasicConsumer(int prevLrFid, int nextLrFid) {
+    public LegacyChainIndexConsumer(Settings settings,
+                                    int prevLrFid, int nextLrFid) {
+        super(settings);
         this.prevLrFid = prevLrFid;
         this.nextLrFid = nextLrFid;
     }
+
+    public static class Settings extends LegacyChainIndex.Settings<Settings> {
+
+        @Override
+        Settings self() {
+            return this;
+        }
+
+        public LegacyChainConsumer forDictionary(DataDictionary dictionary) {
+
+            return new LegacyChainIndexConsumer(this,
+                    fieldId(dictionary, prevLinkName()),
+                    fieldId(dictionary, nextLinkName()));
+        }
+    }
+
+    public static Settings with() {
+        return new Settings();
+    }
+
+    public static LegacyChainConsumer forDictionary(DataDictionary dictionary) {
+        return with().forDictionary(dictionary);
+    }
+
 
     @Override
     public void onChain(String chainName,
@@ -52,7 +80,7 @@ public class LegacyChainBasicConsumer implements LegacyChainConsumer {
             }
         }
 
-        if (!chainRecords.containsKey(nextLrName)) {
+        if (nextLrName != null && !chainRecords.containsKey(nextLrName)) {
             chainSubscriber.accept(nextLrName);
         }
 

@@ -7,6 +7,8 @@ import java.util.function.Consumer;
 
 public interface LegacyChainConsumer extends KeyPublisher<String> {
 
+    String rootChainName();
+
     void onChain(String chainName,
                  FieldList fieldList,
                  Consumer<? super String> chainSubscriber);

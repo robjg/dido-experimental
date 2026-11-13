@@ -48,19 +48,22 @@ public class DidoEmaTestUtil {
      * @param dictionary The dictionary.
      * @return The loaded (encoded/decoded) fieldList.
      */
-    public static FieldList load(FieldList fieldList, DataDictionary dictionary) {
+    public static FieldList loadedFieldList(FieldList fieldList, DataDictionary dictionary) {
 
         FieldList flDec = JUnitTestConnect.createFieldList();
-        JUnitTestConnect.setRsslData(flDec, fieldList, Codec.majorVersion(), Codec.minorVersion(),
+        JUnitTestConnect.setRsslData(flDec,
+                Objects.requireNonNull(fieldList, "Null fieldList"),
+                Codec.majorVersion(),
+                Codec.minorVersion(),
                 etaDictionary(dictionary), null);
 
         return flDec;
     }
 
-    public static List<FieldEntry> loadedEntries(FieldList fieldList, DataDictionary dictionary) {
+    public static List<FieldEntry> entriesFor(FieldList fieldList) {
 
         List<FieldEntry> fieldEntries = new ArrayList<>();
-        for (FieldEntry fieldEntry : load(fieldList, dictionary)) {
+        for (FieldEntry fieldEntry : fieldList) {
             // toArray not supported so must do this.
             //noinspection UseBulkOperation
             fieldEntries.add(fieldEntry);

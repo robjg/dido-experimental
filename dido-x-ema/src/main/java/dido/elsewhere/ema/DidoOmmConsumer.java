@@ -15,7 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -64,6 +66,8 @@ public class DidoOmmConsumer implements OmmConsumerClient {
         private KeyPublisher<String> keyAvailability;
 
         private SchemaAware schemaAware;
+
+        private LegacyChainConsumer legacyChainConsumer;
 
         public Settings host(String host) {
             this.host = host;
@@ -117,6 +121,8 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         public QuietlyCloseable to(KeyedDataConsumer<String> dataConsumer) {
 
+            List<Runnable> closeTasks = new ArrayList<>();
+
             String serviceName = Objects.requireNonNull(this.serviceName,
                     "Service name cannot be null");
 
@@ -168,9 +174,6 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
             java.util.Map<String, Long> handles = new HashMap<>();
 
-
-
-
             @SuppressWarnings("resource")
             QuietlyCloseable subscription = keyAvailability.subscribeKeys(new KeyConsumer<>() {
 
@@ -190,6 +193,17 @@ public class DidoOmmConsumer implements OmmConsumerClient {
                     consumer.unregister(handles.get(key));
                 }
             });
+
+            if (legacyChainConsumer != null) {
+
+                ChainClientConsumer chainClientConsumer = new ChainClientConsumer(
+                        consumer, serviceName, legacyChainConsumer);
+
+                chainClientConsumer.subscribeChain(legacyChainConsumer.rootChainName());
+
+                closeTasks.add(chainClientConsumer::close);
+            }
+
 
             logger.info("Started Consumer to host {}, service name {}", host, serviceName);
 
