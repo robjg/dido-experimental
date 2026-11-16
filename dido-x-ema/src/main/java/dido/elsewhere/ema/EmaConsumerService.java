@@ -2,10 +2,7 @@ package dido.elsewhere.ema;
 
 import dido.data.DataSchema;
 import dido.data.schema.SchemaAware;
-import dido.flow.KeyConsumer;
-import dido.flow.KeyPublisher;
-import dido.flow.KeyedDataConsumer;
-import dido.flow.QuietlyCloseable;
+import dido.flow.*;
 import dido.flow.util.LoggingKeyedDataConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @oddjob.description A server that provides a Consumer of LSEG Real Time Data.
@@ -95,7 +93,7 @@ public class EmaConsumerService {
 
     private QuietlyCloseable close;
 
-    public void start() {
+    public CompletableFuture<Void> start() {
 
         logger.info("Starting EmaConsumerService for host: {} and symbols: {}",
                 host, symbols);
@@ -110,11 +108,13 @@ public class EmaConsumerService {
 
         KeyPublisher<String> keyAvailability = new KeyPublisher<String>() {
             @Override
-            public QuietlyCloseable subscribeKeys(KeyConsumer<? super String> keyConsumer) {
+            public QuietlyCloseable subscribeKeys(KeyConsumer<? super String> keyConsumer, SubscriptionOptions options) {
                 symbols.forEach(keyConsumer::onKey);
                 return () -> {};
             }
         };
+
+        CompletableFuture<Void> future = new CompletableFuture<>();
 
         this.close = DidoOmmConsumer.with()
                 .configPath(configPath)
@@ -128,7 +128,10 @@ public class EmaConsumerService {
                 .schemaAware(schemaAware)
                 .legacyChainConsumerConfig(legacyChain)
                 .keyAvailability(keyAvailability)
+                .started(() -> future.complete(null))
                 .to(to);
+
+        return future;
     }
 
     public void stop() {

@@ -3,10 +3,14 @@
     <components>
         <arooa:bean-def element='ema-consumer'
                         className='dido.elsewhere.ema.EmaConsumerService'>
-                <properties>
-                    <arooa:property name="configPath" type="ATTRIBUTE"/>
-                    <arooa:property name="dictionaryDir" type="ATTRIBUTE"/>
-                </properties>
+            <properties>
+                <arooa:property name="configPath" type="ATTRIBUTE"/>
+                <arooa:property name="dictionaryDir" type="ATTRIBUTE"/>
+            </properties>
+            <annotations>
+                <arooa:annotation name="org.oddjob.framework.adapt.Start" method="start"/>
+                <arooa:annotation name="org.oddjob.framework.adapt.Stop" method="stop"/>
+            </annotations>
         </arooa:bean-def>
         <arooa:bean-def element="ema-iprovider"
                         className="dido.elsewhere.ema.EmaIProviderService">

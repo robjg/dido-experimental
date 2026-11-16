@@ -7,5 +7,9 @@ package dido.flow;
  */
 public interface KeyedDataPublisher<K> {
 
-    DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer);
+    default DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer) {
+        return subscribeKeyedData(consumer, SubscriptionOptions.of().all());
+    }
+
+    DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer, SubscriptionOptions options);
 }

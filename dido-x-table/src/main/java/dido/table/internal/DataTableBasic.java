@@ -69,13 +69,31 @@ public class DataTableBasic<K extends Comparable<K>>
     }
 
     @Override
-    public QuietlyCloseable subscribeKeys(KeyConsumer<? super K> keyConsumer) {
-        return keySubscribers.addKeySubscriber(keyConsumer);
+    public QuietlyCloseable subscribeKeys(KeyConsumer<? super K> keyConsumer, SubscriptionOptions options) {
+        if (options.snapshot()) {
+            keySet().forEach(keyConsumer::onKey);
+            keyConsumer.snapshotComplete();
+        }
+        if (options.delta()) {
+            return keySubscribers.addKeySubscriber(keyConsumer);
+        }
+        else {
+            return () -> {};
+        }
     }
 
     @Override
-    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer) {
-        return dataSubscribers.addSubscriber(consumer);
+    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer, SubscriptionOptions options) {
+        if (options.snapshot()) {
+            forEach(consumer::onData);
+            consumer.snapshotComplete();
+        }
+        if (options.delta()) {
+            return dataSubscribers.addSubscriber(consumer);
+        }
+        else {
+            return DidoSubscription.noop(dataHelper.getSchema());
+        }
     }
 
     @Override

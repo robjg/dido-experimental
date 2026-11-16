@@ -5,6 +5,7 @@ import com.refinitiv.ema.access.FieldList;
 import com.refinitiv.ema.rdm.DataDictionary;
 import dido.flow.KeyConsumer;
 import dido.flow.QuietlyCloseable;
+import dido.flow.SubscriptionOptions;
 import dido.flow.util.KeySubscribers;
 
 import java.util.HashMap;
@@ -115,13 +116,21 @@ public class LegacyChainIndexConsumer extends LegacyChainIndex
     }
 
     @Override
-    public QuietlyCloseable subscribeKeys(KeyConsumer<? super String> keyConsumer) {
-        for  (Set<String> chainRecord : chainRecords.values()) {
-            for (String symbolName : chainRecord) {
-                keySubscribers.onKey(symbolName);
+    public QuietlyCloseable subscribeKeys(KeyConsumer<? super String> keyConsumer, SubscriptionOptions options) {
+        if (options.snapshot()) {
+            for  (Set<String> chainRecord : chainRecords.values()) {
+                for (String symbolName : chainRecord) {
+                    keySubscribers.onKey(symbolName);
+                }
             }
+            keyConsumer.snapshotComplete();
         }
-        return keySubscribers.addKeySubscriber(keyConsumer);
+        if (options.delta()) {
+            return keySubscribers.addKeySubscriber(keyConsumer);
+        }
+        else {
+            return () -> {};
+        }
     }
 
 }

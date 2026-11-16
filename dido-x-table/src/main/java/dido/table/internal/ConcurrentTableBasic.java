@@ -75,8 +75,8 @@ public class ConcurrentTableBasic<K extends Comparable<K>>
     }
 
     @Override
-    public QuietlyCloseable subscribeKeys(KeyConsumer<? super K> keyConsumer) {
-        return delegate.subscribeKeys(keyConsumer);
+    public QuietlyCloseable subscribeKeys(KeyConsumer<? super K> keyConsumer, SubscriptionOptions options) {
+        return delegate.subscribeKeys(keyConsumer, options);
     }
 
     @Override
@@ -203,7 +203,7 @@ public class ConcurrentTableBasic<K extends Comparable<K>>
     }
 
     @Override
-    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer) {
+    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer, SubscriptionOptions options) {
         return delegate.subscribeKeyedData(new KeyedDataConsumer<>() {
             @Override
             public void onData(K key, DidoData data) {
@@ -220,6 +220,6 @@ public class ConcurrentTableBasic<K extends Comparable<K>>
             public void onDelete(K key) {
                 consumer.onDelete(key);
             }
-        });
+        }, options);
     }
 }

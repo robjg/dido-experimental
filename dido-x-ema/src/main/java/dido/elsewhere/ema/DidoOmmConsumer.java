@@ -2,7 +2,6 @@ package dido.elsewhere.ema;
 
 import com.refinitiv.ema.access.*;
 import com.refinitiv.ema.rdm.DataDictionary;
-import com.refinitiv.ema.rdm.EmaRdm;
 import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
@@ -63,6 +62,8 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         private LegacyChainConsumerConfig legacyChainConsumerConfig;
 
+        private Runnable started;
+
         public Settings host(String host) {
             this.host = host;
             return this;
@@ -115,6 +116,11 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         public Settings keyAvailability(KeyPublisher<String> keyAvailability) {
             this.keyAvailability = keyAvailability;
+            return this;
+        }
+
+        public Settings started(Runnable started) {
+            this.started = started;
             return this;
         }
 
@@ -172,25 +178,27 @@ public class DidoOmmConsumer implements OmmConsumerClient {
             }
 
             dictionaryConsumers.add(ignored -> {
+                logger.info("Starting Key Subscription to {}", keyAvailability);
                 KeySubscriber keySubscriber = new KeySubscriber(consumer, serviceName, client, reqMsg);
                 closeTasks.add(keyAvailability.subscribeKeys(keySubscriber));
                 closeTasks.add(keySubscriber);
             });
 
+            if (started != null) {
+                dictionaryConsumers.add(ignored -> {
+                    logger.info("Signalling Consumer Start.");
+                    started.run();
+                });
+            }
+
             DataDictionary dictionary = EmaFactory.createDataDictionary();
             Consumer<DataDictionary> onDictionary = d -> dictionaryConsumers.forEach(
                     c -> c.accept(d));
             if (dictionaryDir == null) {
+                logger.info("No local dictionary. Attempting to download dictionary.");
                 DictionaryConsumerClient dictionaryClient = new DictionaryConsumerClient(
-                        dictionary, onDictionary);
-                long h1 = consumer.registerClient(reqMsg.clear().domainType(EmaRdm.MMT_DICTIONARY).name("RWFFld").
-                        filter(EmaRdm.DICTIONARY_NORMAL), dictionaryClient);
-                long h2 = consumer.registerClient(reqMsg.clear().domainType(EmaRdm.MMT_DICTIONARY).name("RWFEnum").
-                        filter(EmaRdm.DICTIONARY_NORMAL), dictionaryClient);
-//                dictionaryConsumers.add(ignored -> {
-//                    consumer.unregister(h1);
-//                    consumer.unregister(h2);
-//                });
+                        dictionary, reqMsg, onDictionary);
+                dictionaryClient.register(consumer);
             } else {
                 dictionary.loadFieldDictionary(dictionaryDir
                         .resolve("RDMFieldDictionary").toString());
@@ -236,6 +244,8 @@ public class DidoOmmConsumer implements OmmConsumerClient {
         @Override
         public void onKey(String key) {
 
+            logger.debug("Subscribing to {}", key);
+
             long handle = consumer.registerClient(reqMsg.clear()
                             .serviceName(serviceName)
                             .name(key),
@@ -257,9 +267,8 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
 
     // No or partial schema, we need to wait for a field
-// list at the moment.
-// TODO - I think we can look up the service here
-//  and get the field list.
+    // list at the moment. There's now way of knowing from
+    // a directory what fields a service provides.
     static class DidoOmmManager {
 
         private final DataSchema schema;
@@ -268,9 +277,9 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         private final SchemaAware schemaAware;
 
-        private Function<FieldList, DidoOmmData> didoOmmDataFunction;
+        private volatile Function<FieldList, DidoOmmData> didoOmmDataFunction;
 
-        private DidoOmmData didoOmmData;
+        private volatile DidoOmmData didoOmmData;
 
         DidoOmmManager(DataSchema schema,
                        boolean partialSchema,
@@ -282,12 +291,14 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         void onDictionary(DataDictionary dictionary) {
             if (partialSchema || schema == null) {
+                logger.info("Waiting for field list to define Schema.");
                 didoOmmDataFunction =
                         fieldList -> {
                             DidoOmmData dod = DidoOmmData.with()
                                     .schema(schema)
                                     .partialSchema(partialSchema)
                                     .of(dictionary, fieldList);
+                            logger.info("Schema now known: {}", dod.getSchema());
                             notifySchema(dod.getSchema());
                             return dod;
                         };
@@ -325,14 +336,14 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
     public void onRefreshMsg(RefreshMsg refreshMsg, OmmConsumerEvent event) {
 
-        logger.trace("onRefreshMsg: {}", refreshMsg);
+        logger.debug("onRefreshMsg: {}", refreshMsg);
 
         decode(refreshMsg, refreshMsg.complete());
     }
 
     public void onUpdateMsg(UpdateMsg updateMsg, OmmConsumerEvent event) {
 
-        logger.trace("onUpdateMsg: {}", updateMsg);
+        logger.debug("onUpdateMsg: {}", updateMsg);
 
         decode(updateMsg, false);
     }

@@ -20,6 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -35,6 +36,7 @@ public class DidoIProviderConsumerTest {
             .build();
 
     Path providerConfigPath = Path.of("src/test/resources/config/EmaConfigIProvider.xml");
+    Path consumerConfigPath = Path.of("src/test/resources/config/EmaConfigConsumer.xml");
     Path fieldDictionaryPath = Path.of("src/test/resources/dictionary/RDMTinyDictionary");
     Path enumTypeDictionaryPath = Path.of("src/test/resources/dictionary/enumtype.def");
 
@@ -71,6 +73,8 @@ public class DidoIProviderConsumerTest {
 
         int port = freePort();
 
+        CountDownLatch latch = new CountDownLatch(1);
+
         try (AutoCloseable providerClose = DidoOmmIProvider.with()
                 .configPath(providerConfigPath)
                 .fieldDictionaryPath(fieldDictionaryPath)
@@ -81,9 +85,13 @@ public class DidoIProviderConsumerTest {
              AutoCloseable consumerClose = DidoOmmConsumer.with()
                      .host("localhost:" + port)
                      .serviceName("DIRECT_FEED")
+                     .configPath(consumerConfigPath)
                      .schema(SCHEMA)
                      .keyAvailability(table)
+                     .started(latch::countDown)
                      .to(KeyedDataEvent.asKeyedDataConsumer(queue::add))) {
+
+            latch.await();
 
             logger.info("** Started Test");
 

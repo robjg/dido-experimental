@@ -9,6 +9,8 @@ import dido.data.partial.PartialData;
  */
 public interface KeyedDataConsumer<K> {
 
+    default void snapshotComplete() {}
+
     void onData(K key, DidoData data);
 
     void onPartial(K key, PartialData partial);

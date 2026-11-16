@@ -150,6 +150,8 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
             DidoSubscription subscription = appClient.init(provider);
 
+            logger.info("IProvider for {} initialized", serviceName);
+
             return () -> {
                 subscription.close();
                 provider.uninitialize();

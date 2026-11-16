@@ -2,14 +2,12 @@ package dido.table;
 
 import dido.data.DataSchema;
 import dido.data.DidoData;
-import dido.flow.KeyConsumer;
-import dido.flow.KeyPublisher;
-import dido.flow.KeyedDataPublisher;
-import dido.flow.QuietlyCloseable;
+import dido.flow.*;
 import dido.flow.util.KeyConsumerAdapters;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 public interface DataTable<K>
         extends KeyPublisher<K>, KeyedDataPublisher<K> {
@@ -26,8 +24,12 @@ public interface DataTable<K>
 
     DidoData get(K key);
 
+    default void forEach(BiConsumer<? super K, ? super DidoData> action) {
+        entrySet().forEach(entry -> action.accept(entry.getKey(), entry.getValue()));
+    }
+
     @Override
-    default QuietlyCloseable subscribeKeys(KeyConsumer<? super K> keyConsumer) {
-        return subscribeKeyedData(KeyConsumerAdapters.from(keyConsumer));
+    default QuietlyCloseable subscribeKeys(KeyConsumer<? super K> keyConsumer, SubscriptionOptions options) {
+        return subscribeKeyedData(KeyConsumerAdapters.from(keyConsumer), options);
     }
 }

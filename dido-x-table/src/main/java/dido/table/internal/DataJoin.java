@@ -8,6 +8,7 @@ import dido.data.util.EmptyData;
 import dido.flow.DidoSubscription;
 import dido.flow.KeyedDataConsumer;
 import dido.flow.QuietlyCloseable;
+import dido.flow.SubscriptionOptions;
 import dido.flow.util.KeyedDataSubscribers;
 import dido.operators.Concatenator;
 import dido.table.CloseableTable;
@@ -182,8 +183,17 @@ public class DataJoin<K extends Comparable<K>>
     }
 
     @Override
-    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer) {
-        return subscribers.addSubscriber(consumer);
+    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer, SubscriptionOptions options) {
+        if (options.snapshot()) {
+            forEach(consumer::onData);
+            consumer.snapshotComplete();
+        }
+        if (options.snapshot()) {
+            return subscribers.addSubscriber(consumer);
+        }
+        else {
+            return DidoSubscription.noop(getSchema());
+        }
     }
 
     @Override
@@ -239,7 +249,7 @@ public class DataJoin<K extends Comparable<K>>
                         subscribers.onDelete(key);
                     }
                 }
-            });
+            }, SubscriptionOptions.of().delta());
             rightClose = right.subscribeKeyedData(new KeyedDataConsumer<>() {
                 @Override
                 public void onData(K key, DidoData data) {
@@ -263,7 +273,7 @@ public class DataJoin<K extends Comparable<K>>
                         subscribers.onDelete(key);
                     }
                 }
-            });
+            }, SubscriptionOptions.of().delta());
         }
 
         @Override
@@ -342,7 +352,7 @@ public class DataJoin<K extends Comparable<K>>
                         subscribers.onDelete(key);
                     }
                 }
-            });
+            }, SubscriptionOptions.of().delta());
             rightClose = right.subscribeKeyedData(new KeyedDataConsumer<K>() {
                 @Override
                 public void onData(K key, DidoData data) {
@@ -372,7 +382,7 @@ public class DataJoin<K extends Comparable<K>>
                                                 .transpose(left.getSchema().lastIndex()).getIndices()));
                     }
                 }
-            });
+            }, SubscriptionOptions.of().delta());
         }
 
         @Override

@@ -10,7 +10,12 @@ public class KeyConsumerAdapters {
 
     public static <K> KeyedDataConsumer<K> from(KeyConsumer<K> keyConsumer) {
 
-        return new KeyedDataConsumer<K>() {
+        return new KeyedDataConsumer<>() {
+
+            @Override
+            public void snapshotComplete() {
+                keyConsumer.snapshotComplete();
+            }
 
             @Override
             public void onData(K key, DidoData data) {

@@ -6,6 +6,7 @@ import dido.data.partial.PartialData;
 import dido.flow.DidoSubscription;
 import dido.flow.KeyedDataConsumer;
 import dido.flow.QuietlyCloseable;
+import dido.flow.SubscriptionOptions;
 import dido.flow.util.KeyedDataSubscribers;
 import dido.table.CloseableTable;
 import dido.table.DataTable;
@@ -149,8 +150,17 @@ class ForeignKeyedTable<K1 extends Comparable<K1>, K2 extends Comparable<K2>>
     }
 
     @Override
-    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K1> consumer) {
-        return subscribers.addSubscriber(consumer);
+    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K1> consumer, SubscriptionOptions options) {
+        if (options.snapshot()) {
+            forEach(consumer::onData);
+            consumer.snapshotComplete();
+        }
+        if (options.snapshot()) {
+            return subscribers.addSubscriber(consumer);
+        }
+        else {
+            return DidoSubscription.noop(getSchema());
+        }
     }
 
     @Override

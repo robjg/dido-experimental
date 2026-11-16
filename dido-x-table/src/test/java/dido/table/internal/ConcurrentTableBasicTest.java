@@ -4,10 +4,7 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 import dido.data.schema.SubSchema;
-import dido.flow.DidoDataConsumer;
-import dido.flow.KeyConsumer;
-import dido.flow.KeyedDataConsumer;
-import dido.flow.QuietlyCloseable;
+import dido.flow.*;
 import dido.flow.util.SubscriberUtil;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +16,7 @@ import static org.hamcrest.Matchers.*;
 
 class ConcurrentTableBasicTest {
 
-    static class Recorder implements KeyedDataConsumer<Integer>, KeyConsumer<Integer> {
+    static class DataRecorder implements KeyedDataConsumer<Integer> {
 
         List<String> results = new ArrayList<>();
 
@@ -37,12 +34,23 @@ class ConcurrentTableBasicTest {
         public void onDelete(Integer key) {
             results.add("onDelete: " + key);
         }
+    }
+
+    static class KeyRecorder implements KeyConsumer<Integer> {
+
+        List<String> results = new ArrayList<>();
 
         @Override
         public void onKey(Integer key) {
             results.add("onAvailable: " + key);
         }
+
+        @Override
+        public void onDelete(Integer key) {
+            results.add("onDelete: " + key);
+        }
     }
+
 
     @Test
     void crud() {
@@ -96,8 +104,8 @@ class ConcurrentTableBasicTest {
 
         ConcurrentTableBasic<Integer> test = ConcurrentTableBasic.create(schema);
 
-        Recorder recorder = new Recorder();
-        QuietlyCloseable keyClose = test.subscribeKeys(recorder);
+        KeyRecorder keyRecorder = new KeyRecorder();
+        QuietlyCloseable keyClose = test.subscribeKeys(keyRecorder);
 
         DidoDataConsumer didoSubscriber = SubscriberUtil.didoSubscriberFrom(
                 test, schema);
@@ -108,34 +116,40 @@ class ConcurrentTableBasicTest {
                 .of(3, "Banana", 5).toStream()
                 .forEach(didoSubscriber::onData);
 
-        assertThat(recorder.results, contains("onAvailable: 1", "onAvailable: 5",  "onAvailable: 3"));
-        recorder.results.clear();
+        assertThat(keyRecorder.results, contains("onAvailable: 1", "onAvailable: 5",  "onAvailable: 3"));
+        keyRecorder.results.clear();
 
-        QuietlyCloseable close = test.subscribeKeyedData(recorder);
+        DataRecorder dataRecorder = new DataRecorder();
+        QuietlyCloseable close = test.subscribeKeyedData(dataRecorder, SubscriptionOptions.of().delta());
 
         didoSubscriber.onData(DidoData.withSchema(schema).of(2, "Pear", 14));
 
-        assertThat(recorder.results, contains(
-                "onAvailable: 2",
+        assertThat(keyRecorder.results, contains(
+                "onAvailable: 2"));
+        assertThat(dataRecorder.results, contains(
                 "onData: 2, {[1:Id]=2, [2:Fruit]=Pear, [3:Qty]=14}"));
-        recorder.results.clear();
+        keyRecorder.results.clear();
+        dataRecorder.results.clear();
 
         didoSubscriber.onPartial(PartialData.of(
                 DidoData.withSchema(SubSchema.from(schema).withIndices(1, 2)).of(5, "Grape")));
 
-        assertThat(recorder.results, contains("onPartial: 5, {[1:Id]=5, [2:Fruit]=Grape}"));
-        recorder.results.clear();
+        assertThat(dataRecorder.results, contains("onPartial: 5, {[1:Id]=5, [2:Fruit]=Grape}"));
+        dataRecorder.results.clear();
 
         didoSubscriber.onDelete(DidoData.withSchema(SubSchema.from(schema).withIndices(1)).of(3));
 
-        assertThat(recorder.results, contains("onDelete: 3", "onDelete: 3"));
-        recorder.results.clear();
+        assertThat(keyRecorder.results, contains("onDelete: 3"));
+        assertThat(dataRecorder.results, contains("onDelete: 3"));
+        keyRecorder.results.clear();
+        dataRecorder.results.clear();
 
         close.close();
         keyClose.close();
 
         didoSubscriber.onDelete(DidoData.withSchema(SubSchema.from(schema).withIndices(1)).of(5));
 
-        assertThat(recorder.results, empty());
+        assertThat(keyRecorder.results, empty());
+        assertThat(dataRecorder.results, empty());
     }
 }

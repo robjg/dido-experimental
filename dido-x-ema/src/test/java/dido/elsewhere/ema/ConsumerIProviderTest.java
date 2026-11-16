@@ -51,7 +51,7 @@ class ConsumerIProviderTest {
 
         StateSteps clientStates = new StateSteps(clientOddjob);
         clientStates.startCheck(StateConditions.READY,
-                StateConditions.EXECUTING, StateConditions.STARTED);
+                StateConditions.EXECUTING, StateConditions.ACTIVE, StateConditions.STARTED);
 
         clientOddjob.run();
 

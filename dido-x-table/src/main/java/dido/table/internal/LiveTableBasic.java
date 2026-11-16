@@ -6,6 +6,7 @@ import dido.data.partial.PartialData;
 import dido.flow.DidoDataConsumer;
 import dido.flow.DidoSubscription;
 import dido.flow.KeyedDataConsumer;
+import dido.flow.SubscriptionOptions;
 import dido.flow.util.KeyedDataSubscribers;
 import dido.operators.transform.OperationDefinition;
 import dido.table.LiveRow;
@@ -140,8 +141,17 @@ public class LiveTableBasic<K extends Comparable<K>> implements LiveTable<K> {
     }
 
     @Override
-    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer) {
-        return subscribers.addSubscriber(consumer);
+    public DidoSubscription subscribeKeyedData(KeyedDataConsumer<? super K> consumer, SubscriptionOptions options) {
+        if (options.snapshot()) {
+            rows.forEach((k, row) -> consumer.onData(k, row.asData()));
+            snapshotComplete();
+        }
+        if (options.delta()) {
+            return subscribers.addSubscriber(consumer);
+        }
+        else {
+            return DidoSubscription.noop(schema);
+        }
     }
 
     @Override

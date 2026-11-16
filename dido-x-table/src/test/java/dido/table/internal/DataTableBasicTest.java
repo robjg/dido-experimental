@@ -4,10 +4,7 @@ import dido.data.DataSchema;
 import dido.data.DidoData;
 import dido.data.partial.PartialData;
 import dido.data.schema.SubSchema;
-import dido.flow.DidoDataConsumer;
-import dido.flow.KeyConsumer;
-import dido.flow.QuietlyCloseable;
-import dido.flow.KeyedDataConsumer;
+import dido.flow.*;
 import dido.flow.util.SubscriberUtil;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +16,7 @@ import static org.hamcrest.Matchers.*;
 
 class DataTableBasicTest {
 
-    static class Recorder implements KeyedDataConsumer<Integer> {
+    static class DataRecorder implements KeyedDataConsumer<Integer> {
 
         List<String> results = new ArrayList<>();
 
@@ -121,26 +118,26 @@ class DataTableBasicTest {
         assertThat(keyRecorder.results, contains("onAvailable: 1", "onAvailable: 5",  "onAvailable: 3"));
         keyRecorder.results.clear();
 
-        Recorder recorder = new Recorder();
-        QuietlyCloseable close = test.subscribeKeyedData(recorder);
+        DataRecorder dataRecorder = new DataRecorder();
+        QuietlyCloseable close = test.subscribeKeyedData(dataRecorder, SubscriptionOptions.of().delta());
 
         didoSubscriber.onData(DidoData.withSchema(schema).of(2, "Pear", 14));
 
-        assertThat(recorder.results, contains("onData: 2, {[1:Id]=2, [2:Fruit]=Pear, [3:Qty]=14}"));
-        recorder.results.clear();
+        assertThat(dataRecorder.results, contains("onData: 2, {[1:Id]=2, [2:Fruit]=Pear, [3:Qty]=14}"));
+        dataRecorder.results.clear();
         assertThat(keyRecorder.results, contains("onAvailable: 2"));
         keyRecorder.results.clear();
 
         didoSubscriber.onPartial(PartialData.of(
                 DidoData.withSchema(SubSchema.from(schema).withIndices(1, 2)).of(5, "Grape")));
 
-        assertThat(recorder.results, contains("onPartial: 5, {[1:Id]=5, [2:Fruit]=Grape}"));
-        recorder.results.clear();
+        assertThat(dataRecorder.results, contains("onPartial: 5, {[1:Id]=5, [2:Fruit]=Grape}"));
+        dataRecorder.results.clear();
 
         didoSubscriber.onDelete(DidoData.withSchema(SubSchema.from(schema).withIndices(1)).of(3));
 
-        assertThat(recorder.results, contains("onDelete: 3"));
-        recorder.results.clear();
+        assertThat(dataRecorder.results, contains("onDelete: 3"));
+        dataRecorder.results.clear();
 
         assertThat(keyRecorder.results, contains("onRemoved: 3"));
         keyRecorder.results.clear();
@@ -150,7 +147,7 @@ class DataTableBasicTest {
 
         didoSubscriber.onDelete(DidoData.withSchema(SubSchema.from(schema).withIndices(1)).of(5));
 
-        assertThat(recorder.results, empty());
+        assertThat(dataRecorder.results, empty());
         assertThat(keyRecorder.results, empty());
     }
 }

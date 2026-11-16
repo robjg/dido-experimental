@@ -8,27 +8,38 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
-class DictionaryConsumerClient implements OmmConsumerClient, AutoCloseable {
+class DictionaryConsumerClient implements OmmConsumerClient {
 
     private static final Logger logger = LoggerFactory.getLogger(DictionaryConsumerClient.class);
 
     private final DataDictionary dataDictionary;
+
+    private final ReqMsg reqMsg;
 
     private final Consumer<? super DataDictionary> onDictionary;
 
     private boolean fldDictComplete = false;
     private boolean enumTypeComplete = false;
 
+    private Runnable unregister;
+
     DictionaryConsumerClient(DataDictionary dataDictionary,
+                             ReqMsg reqMsg,
                              Consumer<? super DataDictionary> onDictionary) {
         this.dataDictionary = dataDictionary;
+        this.reqMsg = reqMsg;
         this.onDictionary = onDictionary;
     }
 
-
-    @Override
-    public void close() {
-
+    void register(OmmConsumer consumer) {
+        long h1 = consumer.registerClient(reqMsg.clear().domainType(EmaRdm.MMT_DICTIONARY).name("RWFFld").
+                filter(EmaRdm.DICTIONARY_NORMAL), this);
+        long h2 = consumer.registerClient(reqMsg.clear().domainType(EmaRdm.MMT_DICTIONARY).name("RWFEnum").
+                filter(EmaRdm.DICTIONARY_NORMAL), this);
+        unregister = () -> {
+            consumer.unregister(h1);
+            consumer.unregister(h2);
+        };
     }
 
     @Override
@@ -49,6 +60,8 @@ class DictionaryConsumerClient implements OmmConsumerClient, AutoCloseable {
             }
 
             if (fldDictComplete && enumTypeComplete) {
+                logger.info("Dictionary download complete.");
+                unregister.run();
                 onDictionary.accept(dataDictionary);
             }
 
