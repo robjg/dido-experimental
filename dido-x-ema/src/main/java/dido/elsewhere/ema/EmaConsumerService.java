@@ -84,6 +84,8 @@ public class EmaConsumerService {
      */
     private boolean partialSchema;
 
+    private LegacyChainConsumerConfig legacyChain;
+
     /**
      * @oddjob.description The destination. Set automatically if
      * used in BeanBus.
@@ -124,6 +126,7 @@ public class EmaConsumerService {
                 .schema(schema)
                 .partialSchema(partialSchema)
                 .schemaAware(schemaAware)
+                .legacyChainConsumerConfig(legacyChain)
                 .keyAvailability(keyAvailability)
                 .to(to);
     }

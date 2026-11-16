@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class DidoOmmConsumer implements OmmConsumerClient {
@@ -32,15 +33,8 @@ public class DidoOmmConsumer implements OmmConsumerClient {
      */
     private final DidoOmmManager didoOmmManager;
 
-    private final DataDictionary dataDictionary;
-
-    private boolean fldDictComplete = false;
-    private boolean enumTypeComplete = false;
-
-    DidoOmmConsumer(DataDictionary dataDictionary,
-                    DidoOmmManager didoOmmManager,
+    DidoOmmConsumer(DidoOmmManager didoOmmManager,
                     KeyedDataConsumer<String> dataConsumer) {
-        this.dataDictionary = dataDictionary;
         this.didoOmmManager = didoOmmManager;
         this.dataConsumer = dataConsumer;
     }
@@ -67,7 +61,7 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         private SchemaAware schemaAware;
 
-        private LegacyChainConsumer legacyChainConsumer;
+        private LegacyChainConsumerConfig legacyChainConsumerConfig;
 
         public Settings host(String host) {
             this.host = host;
@@ -114,6 +108,11 @@ public class DidoOmmConsumer implements OmmConsumerClient {
             return this;
         }
 
+        public Settings legacyChainConsumerConfig(LegacyChainConsumerConfig legacyChainConsumerConfig) {
+            this.legacyChainConsumerConfig = legacyChainConsumerConfig;
+            return this;
+        }
+
         public Settings keyAvailability(KeyPublisher<String> keyAvailability) {
             this.keyAvailability = keyAvailability;
             return this;
@@ -121,7 +120,7 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         public QuietlyCloseable to(KeyedDataConsumer<String> dataConsumer) {
 
-            List<Runnable> closeTasks = new ArrayList<>();
+            List<AutoCloseable> closeTasks = new ArrayList<>();
 
             String serviceName = Objects.requireNonNull(this.serviceName,
                     "Service name cannot be null");
@@ -130,8 +129,7 @@ public class DidoOmmConsumer implements OmmConsumerClient {
             if (configPath == null) {
                 logger.info("Creating default OmmConsumerConfig");
                 config = EmaFactory.createOmmConsumerConfig();
-            }
-            else {
+            } else {
                 logger.info("Creating OmmConsumerConfig from {}", configPath);
                 config = EmaFactory.createOmmConsumerConfig(configPath.toString());
             }
@@ -148,77 +146,120 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
             OmmConsumer consumer = EmaFactory.createOmmConsumer(config);
 
+            List<Consumer<? super DataDictionary>> dictionaryConsumers = new ArrayList<>();
+
             DidoOmmManager didoOmmManager = new DidoOmmManager(schema,
                     partialSchema, schemaAware);
+            dictionaryConsumers.add(didoOmmManager::onDictionary);
 
-            DataDictionary dictionary = EmaFactory.createDataDictionary();
-            DidoOmmConsumer client = new DidoOmmConsumer(dictionary,
-                    didoOmmManager, dataConsumer);
+            DidoOmmConsumer client = new DidoOmmConsumer(didoOmmManager, dataConsumer);
 
             ReqMsg reqMsg = EmaFactory.createReqMsg();
 
+            if (legacyChainConsumerConfig != null) {
+
+                dictionaryConsumers.add(dictionary ->
+                        {
+                            LegacyChainConsumer legacyChainConsumer = legacyChainConsumerConfig.forDictionary(dictionary);
+
+                            ChainConsumerClient chainConsumerClient = new ChainConsumerClient(
+                                    consumer, serviceName, legacyChainConsumer);
+                            chainConsumerClient.subscribeChain(legacyChainConsumer.rootChainName());
+
+                            closeTasks.add(chainConsumerClient);
+                        }
+                );
+            }
+
+            dictionaryConsumers.add(ignored -> {
+                KeySubscriber keySubscriber = new KeySubscriber(consumer, serviceName, client, reqMsg);
+                closeTasks.add(keyAvailability.subscribeKeys(keySubscriber));
+                closeTasks.add(keySubscriber);
+            });
+
+            DataDictionary dictionary = EmaFactory.createDataDictionary();
+            Consumer<DataDictionary> onDictionary = d -> dictionaryConsumers.forEach(
+                    c -> c.accept(d));
             if (dictionaryDir == null) {
-
-                consumer.registerClient(reqMsg.clear().domainType(EmaRdm.MMT_DICTIONARY).name("RWFFld").
-                        filter(EmaRdm.DICTIONARY_NORMAL), client);
-
-                consumer.registerClient(reqMsg.clear().domainType(EmaRdm.MMT_DICTIONARY).name("RWFEnum").
-                        filter(EmaRdm.DICTIONARY_NORMAL), client);
+                DictionaryConsumerClient dictionaryClient = new DictionaryConsumerClient(
+                        dictionary, onDictionary);
+                long h1 = consumer.registerClient(reqMsg.clear().domainType(EmaRdm.MMT_DICTIONARY).name("RWFFld").
+                        filter(EmaRdm.DICTIONARY_NORMAL), dictionaryClient);
+                long h2 = consumer.registerClient(reqMsg.clear().domainType(EmaRdm.MMT_DICTIONARY).name("RWFEnum").
+                        filter(EmaRdm.DICTIONARY_NORMAL), dictionaryClient);
+//                dictionaryConsumers.add(ignored -> {
+//                    consumer.unregister(h1);
+//                    consumer.unregister(h2);
+//                });
             } else {
                 dictionary.loadFieldDictionary(dictionaryDir
                         .resolve("RDMFieldDictionary").toString());
                 dictionary.loadEnumTypeDictionary(dictionaryDir
                         .resolve("enumtype.def").toString());
-                didoOmmManager.onDictionary(dictionary);
+                onDictionary.accept(dictionary);
             }
-
-            java.util.Map<String, Long> handles = new HashMap<>();
-
-            @SuppressWarnings("resource")
-            QuietlyCloseable subscription = keyAvailability.subscribeKeys(new KeyConsumer<>() {
-
-                @Override
-                public void onKey(String key) {
-
-                    long handle = consumer.registerClient(reqMsg.clear()
-                                    .serviceName(serviceName)
-                                    .name(key),
-                            client);
-
-                    handles.put(key, handle);
-                }
-
-                @Override
-                public void onDelete(String key) {
-                    consumer.unregister(handles.get(key));
-                }
-            });
-
-            if (legacyChainConsumer != null) {
-
-                ChainClientConsumer chainClientConsumer = new ChainClientConsumer(
-                        consumer, serviceName, legacyChainConsumer);
-
-                chainClientConsumer.subscribeChain(legacyChainConsumer.rootChainName());
-
-                closeTasks.add(chainClientConsumer::close);
-            }
-
 
             logger.info("Started Consumer to host {}, service name {}", host, serviceName);
 
             return () -> {
-                subscription.close();
-                handles.values().forEach(consumer::unregister);
+                closeTasks.forEach(closeTask -> {
+                    try {
+                        closeTask.close();
+                    } catch (Exception e) {
+                        logger.warn("Failed closing {}", closeTask, e);
+                    }
+                });
                 consumer.uninitialize();
             };
         }
     }
 
+    static class KeySubscriber implements KeyConsumer<String>, AutoCloseable {
+
+        private final java.util.Map<String, Long> handles = new HashMap<>();
+
+        private final OmmConsumer consumer;
+
+        private final String serviceName;
+
+        private final DidoOmmConsumer client;
+
+        private final ReqMsg reqMsg;
+
+        KeySubscriber(OmmConsumer consumer, String serviceName, DidoOmmConsumer client, ReqMsg reqMsg) {
+            this.consumer = consumer;
+            this.serviceName = serviceName;
+            this.client = client;
+            this.reqMsg = reqMsg;
+        }
+
+        @Override
+        public void onKey(String key) {
+
+            long handle = consumer.registerClient(reqMsg.clear()
+                            .serviceName(serviceName)
+                            .name(key),
+                    client);
+
+            handles.put(key, handle);
+        }
+
+        @Override
+        public void onDelete(String key) {
+            consumer.unregister(handles.get(key));
+        }
+
+        @Override
+        public void close() {
+            handles.values().forEach(consumer::unregister);
+        }
+    }
+
+
     // No or partial schema, we need to wait for a field
-    // list at the moment.
-    // TODO - I think we can look up the service here
-    //  and get the field list.
+// list at the moment.
+// TODO - I think we can look up the service here
+//  and get the field list.
     static class DidoOmmManager {
 
         private final DataSchema schema;
@@ -284,14 +325,14 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
     public void onRefreshMsg(RefreshMsg refreshMsg, OmmConsumerEvent event) {
 
-        logger.debug("onRefreshMsg: {}", refreshMsg);
+        logger.trace("onRefreshMsg: {}", refreshMsg);
 
         decode(refreshMsg, refreshMsg.complete());
     }
 
     public void onUpdateMsg(UpdateMsg updateMsg, OmmConsumerEvent event) {
 
-        logger.debug("onUpdateMsg: {}", updateMsg);
+        logger.trace("onUpdateMsg: {}", updateMsg);
 
         decode(updateMsg, false);
     }
@@ -315,40 +356,18 @@ public class DidoOmmConsumer implements OmmConsumerClient {
 
         int dataType = msg.payload().dataType();
 
-        switch (dataType) {
-            case DataType.DataTypes.SERIES:
+        if (dataType == DataType.DataTypes.FIELD_LIST) {
 
-                if (msg.name().equals("RWFFld")) {
-                    dataDictionary.decodeFieldDictionary(msg.payload().series(), EmaRdm.DICTIONARY_NORMAL);
-
-                    if (complete) {
-                        fldDictComplete = true;
-                    }
-                } else if (msg.name().equals("RWFEnum")) {
-                    dataDictionary.decodeEnumTypeDictionary(msg.payload().series(), EmaRdm.DICTIONARY_NORMAL);
-
-                    if (complete) {
-                        enumTypeComplete = true;
-                    }
-                }
-
-                if (fldDictComplete && enumTypeComplete) {
-                    didoOmmManager.onDictionary(dataDictionary);
-                }
-
-                break;
-            case DataType.DataTypes.FIELD_LIST:
-
-                FieldList fieldList = msg.payload().fieldList();
-                if (complete) {
-                    dataConsumer.onData(msg.name(),
-                            didoOmmManager.onFieldList(fieldList));
-                } else {
-                    dataConsumer.onPartial(msg.name(),
-                            didoOmmManager.onPartialFieldList(fieldList));
-                }
-                break;
-            default:
+            FieldList fieldList = msg.payload().fieldList();
+            if (complete) {
+                dataConsumer.onData(msg.name(),
+                        didoOmmManager.onFieldList(fieldList));
+            } else {
+                dataConsumer.onPartial(msg.name(),
+                        didoOmmManager.onPartialFieldList(fieldList));
+            }
+        }
+        else {
                 logger.warn("Unsupported data type: {}", dataType);
         }
     }

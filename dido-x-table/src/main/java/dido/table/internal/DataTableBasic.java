@@ -125,4 +125,9 @@ public class DataTableBasic<K extends Comparable<K>>
         keySubscribers.onDelete(key);
         dataSubscribers.onDelete(key);
     }
+
+    @Override
+    public String toString() {
+        return "DataTableBasic{ size:" + size() + '}';
+    }
 }

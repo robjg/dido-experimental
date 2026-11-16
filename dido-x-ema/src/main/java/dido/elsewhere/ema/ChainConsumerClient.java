@@ -7,9 +7,9 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.Set;
 
-class ChainClientConsumer implements OmmConsumerClient, AutoCloseable {
+class ChainConsumerClient implements OmmConsumerClient, AutoCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(ChainClientConsumer.class);
+    private static final Logger logger = LoggerFactory.getLogger(ChainConsumerClient.class);
 
     private final ReqMsg reqMsg = EmaFactory.createReqMsg();
 
@@ -21,7 +21,7 @@ class ChainClientConsumer implements OmmConsumerClient, AutoCloseable {
 
     private final Set<Long> handles = new HashSet<>();
 
-    ChainClientConsumer(OmmConsumer consumer, String serviceName,
+    ChainConsumerClient(OmmConsumer consumer, String serviceName,
                         LegacyChainConsumer chainConsumer) {
         this.consumer = consumer;
         this.serviceName = serviceName;

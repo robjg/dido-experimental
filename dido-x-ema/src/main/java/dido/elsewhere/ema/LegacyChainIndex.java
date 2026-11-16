@@ -28,6 +28,8 @@ public class LegacyChainIndex {
 
         private int firstIndex;
 
+        private int symbolsPerRecord;
+
         private Function<? super Integer, ? extends String> iToCain;
 
         private String prevLrName;
@@ -36,14 +38,25 @@ public class LegacyChainIndex {
 
         abstract B self();
 
+        public B firstIndex(int firstIndex) {
+            this.firstIndex = firstIndex;
+            return self();
+        }
+
+        public B symbolsPerRecord(int symbolsPerRecord) {
+            this.symbolsPerRecord = symbolsPerRecord;
+            return self();
+        }
+
+
         public B iToIndex(Function<? super Integer, ? extends String> iToCain) {
             this.iToCain = iToCain;
             return self();
         }
 
-        public B firstIndex(int firstIndex) {
-            this.firstIndex = firstIndex;
-            return self();
+        protected int symbolsPerRecord() {
+            return this.symbolsPerRecord == 0 ?
+                    17 : this.symbolsPerRecord;
         }
 
         protected String prevLinkName() {

@@ -42,22 +42,17 @@ public class LegacyChainIndexProvider extends LegacyChainIndex
         this.fieldEntries = fieldEntries;
     }
 
-    public static class Settings extends LegacyChainIndex.Settings<Settings> {
-
-        private int symbolsPerRecord;
+    public static class Settings extends LegacyChainIndex.Settings<Settings>
+            implements LegacyChainProviderConfig {
 
         private Function<? super Integer, ? extends String> nToField;
 
+        @Override
         Settings self() {
             return this;
         }
 
-
-        public Settings symbolsPerRecord(int symbolsPerRecord) {
-            this.symbolsPerRecord = symbolsPerRecord;
-            return this;
-        }
-
+        @Override
         public LegacyChainIndexProvider forDictionary(DataDictionary dictionary) {
 
             FieldReady prevLrField = field(dictionary, prevLinkName());
@@ -67,8 +62,7 @@ public class LegacyChainIndexProvider extends LegacyChainIndex
             Function<? super Integer, ? extends String> nToField =
                     Objects.requireNonNullElse(this.nToField, DEFAULT_N_TO_FIELD_FN);
 
-            int symbolsPerRecord = this.symbolsPerRecord == 0 ?
-                    17 : this.symbolsPerRecord;
+            int symbolsPerRecord = symbolsPerRecord();
 
             List<FieldReady> fieldEntries = new ArrayList<>();
 

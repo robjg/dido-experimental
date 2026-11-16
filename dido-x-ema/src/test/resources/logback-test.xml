@@ -8,11 +8,24 @@
     </encoder>
   </appender>
 
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>${build.directory}/test-logs/ema-tests.log</file>
+    <append>true</append>
+    <!-- set immediateFlush to false for much higher logging throughput -->
+    <immediateFlush>true</immediateFlush>
+    <!-- encoders are assigned the type
+         ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+    <encoder>
+      <pattern>%d %-5level [%thread] %X{ojpad}\(%F:%L\) [%X{ojname}] - %msg%n</pattern>
+    </encoder>
+  </appender>
+
   <root level="INFO">
     <appender-ref ref="STDOUT" />
+    <appender-ref ref="FILE" />
   </root>
   
   <logger name="org.oddjob" level="INFO"/>
   <logger name="dido" level="DEBUG"/>
-
+  <logger name="com.refinitiv" level="WARN"/>
 </configuration>

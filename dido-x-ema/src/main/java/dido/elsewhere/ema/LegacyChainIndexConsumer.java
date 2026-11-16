@@ -31,13 +31,15 @@ public class LegacyChainIndexConsumer extends LegacyChainIndex
         this.nextLrFid = nextLrFid;
     }
 
-    public static class Settings extends LegacyChainIndex.Settings<Settings> {
+    public static class Settings extends LegacyChainIndex.Settings<Settings>
+            implements LegacyChainConsumerConfig {
 
         @Override
         Settings self() {
             return this;
         }
 
+        @Override
         public LegacyChainConsumer forDictionary(DataDictionary dictionary) {
 
             return new LegacyChainIndexConsumer(this,

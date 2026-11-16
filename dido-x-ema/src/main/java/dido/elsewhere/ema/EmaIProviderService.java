@@ -26,6 +26,8 @@ public class EmaIProviderService {
 
     private Path enumTypeDictionaryPath;
 
+    private LegacyChainProviderConfig legacyChain;
+
     public void start() {
 
         close = DidoOmmIProvider
@@ -34,6 +36,7 @@ public class EmaIProviderService {
                 .configPath(configPath)
                 .fieldDictionaryPath(fieldDictionaryPath)
                 .enumTypeDictionaryPath(enumTypeDictionaryPath)
+                .legacyChainProviderConfig(legacyChain)
                 .from(Objects.requireNonNull(
                         table, "Data Table Required"));
     }
@@ -81,6 +84,14 @@ public class EmaIProviderService {
 
     public void setEnumTypeDictionaryPath(Path enumTypeDictionaryPath) {
         this.enumTypeDictionaryPath = enumTypeDictionaryPath;
+    }
+
+    public LegacyChainProviderConfig getLegacyChain() {
+        return legacyChain;
+    }
+
+    public void setLegacyChain(LegacyChainProviderConfig legacyChain) {
+        this.legacyChain = legacyChain;
     }
 
     public DataTable<String> getTable() {

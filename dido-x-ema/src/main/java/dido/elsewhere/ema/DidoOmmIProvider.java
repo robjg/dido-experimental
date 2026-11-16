@@ -69,7 +69,7 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
         private String serviceName;
 
-        private LegacyChainProvider legacyChain;
+        private LegacyChainProviderConfig legacyChainProviderConfig;
 
         public Settings port(int port) {
             this.port = port;
@@ -96,8 +96,8 @@ public class DidoOmmIProvider implements OmmProviderClient {
             return this;
         }
 
-        public Settings legacyChainProvider(LegacyChainProvider legacyChain) {
-            this.legacyChain = legacyChain;
+        public Settings legacyChainProviderConfig(LegacyChainProviderConfig legacyChainProviderConfig) {
+            this.legacyChainProviderConfig = legacyChainProviderConfig;
             return this;
         }
 
@@ -117,14 +117,15 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
             DidoToOmm didoToOmm = DidoToOmm.forSchema(dataTable.getSchema(), dictionary);
 
-            LegacyChainProvider legacyChain = Objects.requireNonNullElseGet(
-                    this.legacyChain, LegacyChainProvider.NoOp::new);
+            LegacyChainProvider legacyChainProvider = Optional.ofNullable(this.legacyChainProviderConfig)
+                .map(lcpc -> lcpc.forDictionary(dictionary))
+                    .orElseGet(LegacyChainProvider.NoOp::new);
 
             DidoOmmIProvider appClient = new DidoOmmIProvider(
                     serviceName,
                     dictionary,
                     didoToOmm,
-                    legacyChain,
+                    legacyChainProvider,
                     dataTable);
 
             OmmIProviderConfig config;
@@ -146,7 +147,6 @@ public class DidoOmmIProvider implements OmmProviderClient {
             }
 
             OmmProvider provider = EmaFactory.createOmmProvider(config, appClient);
-
 
             DidoSubscription subscription = appClient.init(provider);
 
