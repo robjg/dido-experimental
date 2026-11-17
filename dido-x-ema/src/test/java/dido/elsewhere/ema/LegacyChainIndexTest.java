@@ -47,7 +47,7 @@ class LegacyChainIndexTest {
                     return DidoEmaTestUtil.loadedFieldList(fieldList, dictionary);
                 };
 
-        List<FieldEntry> entries = DidoEmaTestUtil.entriesFor(
+        List<FieldEntry> entries = DidoEmaTestUtil.fieldEntriesFrom(
                 loadedFieldList.apply("0#.INDEX"));
 
         Map<String, String> mapped = entries.stream()

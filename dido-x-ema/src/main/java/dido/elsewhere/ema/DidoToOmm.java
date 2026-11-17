@@ -224,22 +224,21 @@ public class DidoToOmm implements Function<DidoData, FieldList> {
         }
     }
 
-    static class AsciiField implements Function<DidoData, FieldEntry> {
-
-        private final int fieldId;
-
-        private final FieldGetter getter;
+    static class AsciiField extends FieldBase {
 
         AsciiField(int fieldId, FieldGetter getter) {
-            this.fieldId = fieldId;
-            this.getter = getter;
+            super(fieldId, getter);
         }
 
         @Override
         public FieldEntry apply(DidoData data) {
 
-            return EmaFactory.createFieldEntry()
-                    .ascii(fieldId, getter.getString(data));
+            if (getter.has(data)) {
+                return fieldEntry.ascii(fieldId, getter.getString(data));
+            }
+            else {
+                return fieldEntry.codeAscii(fieldId);
+            }
         }
     }
 

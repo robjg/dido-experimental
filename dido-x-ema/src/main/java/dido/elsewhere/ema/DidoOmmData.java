@@ -21,6 +21,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -210,17 +213,6 @@ public class DidoOmmData implements HasSchema {
         return milliSeconds * 1_000_000 + microSeconds * 1_000 + nanoSeconds;
     }
 
-
-    abstract static class OmmFieldGetter extends AbstractFieldGetter {
-
-        protected final int index;
-
-
-        OmmFieldGetter(int index) {
-            this.index = index;
-        }
-    }
-
     static class Schema extends DataSchemaImpl implements ReadSchema {
 
         private final FieldGetter[] getters;
@@ -345,15 +337,52 @@ public class DidoOmmData implements HasSchema {
         };
     }
 
-    static class Blank extends OmmFieldGetter {
+    abstract static class OmmFieldGetter extends AbstractFieldGetter {
 
-        Blank(int index) {
-            super(index);
+        protected final int index;
+
+        OmmFieldGetter(int index) {
+            this.index = index;
+        }
+
+        FieldEntry fieldEntry(DidoData data) {
+            return ((Data) data).fields[index];
         }
 
         @Override
-        public Object get(DidoData data) {
-            return null;
+        public boolean has(DidoData data) {
+            FieldEntry fieldEntry = fieldEntry(data);
+            return !(fieldEntry.code() == com.refinitiv.ema.access.Data.DataCode.BLANK);
+        }
+
+        <T> T extract(DidoData data, Function<? super FieldEntry, ? extends T> extractor) {
+            FieldEntry fieldEntry = fieldEntry(data);
+            if (fieldEntry.code() == com.refinitiv.ema.access.Data.DataCode.BLANK) {
+                return null;
+            }
+            else {
+                return extractor.apply(fieldEntry);
+            }
+        }
+
+        long extractLong(DidoData data, ToLongFunction<? super FieldEntry> extractor) {
+            FieldEntry fieldEntry = fieldEntry(data);
+            if (fieldEntry.code() == com.refinitiv.ema.access.Data.DataCode.BLANK) {
+                return 0L;
+            }
+            else {
+                return extractor.applyAsLong(fieldEntry);
+            }
+        }
+
+        double extractDouble(DidoData data, ToDoubleFunction<? super FieldEntry> extractor) {
+            FieldEntry fieldEntry = fieldEntry(data);
+            if (fieldEntry.code() == com.refinitiv.ema.access.Data.DataCode.BLANK) {
+                return 0.0;
+            }
+            else {
+                return extractor.applyAsDouble(fieldEntry);
+            }
         }
     }
 
@@ -365,12 +394,17 @@ public class DidoOmmData implements HasSchema {
 
         @Override
         public Object get(DidoData data) {
-            return getDouble(data);
+            if (has(data)) {
+                return getDouble(data);
+            }
+            else {
+                return null;
+            }
         }
 
         @Override
         public double getDouble(DidoData data) {
-            return ((Data) data).fields[index].real().asDouble();
+            return extractDouble(data, fe -> fe.real().asDouble());
         }
     }
 
@@ -382,12 +416,17 @@ public class DidoOmmData implements HasSchema {
 
         @Override
         public Object get(DidoData data) {
-            return getLong(data);
+            if (has(data)) {
+                return getLong(data);
+            }
+            else {
+                return null;
+            }
         }
 
         @Override
         public long getLong(DidoData data) {
-            return ((Data) data).fields[index].real().mantissa();
+            return extractLong(data, fe -> fe.real().mantissa());
         }
     }
 
@@ -399,12 +438,17 @@ public class DidoOmmData implements HasSchema {
 
         @Override
         public Object get(DidoData data) {
-            return getInt(data);
+            if (has(data)) {
+                return getInt(data);
+            }
+            else {
+                return null;
+            }
         }
 
         @Override
         public int getInt(DidoData data) {
-            return (int) ((Data) data).fields[index].real().mantissa();
+            return (int) extractLong(data, fe -> fe.real().mantissa());
         }
     }
 
@@ -462,12 +506,17 @@ public class DidoOmmData implements HasSchema {
 
         @Override
         public Object get(DidoData data) {
-            return getLong(data);
+            if (has(data)) {
+                return getLong(data);
+            }
+            else {
+                return null;
+            }
         }
 
         @Override
         public long getLong(DidoData data) {
-            return ((Data) data).fields[index].intValue();
+            return extractLong(data, FieldEntry::intValue);
         }
     }
 
@@ -479,12 +528,17 @@ public class DidoOmmData implements HasSchema {
 
         @Override
         public Object get(DidoData data) {
-            return getLong(data);
+            if (has(data)) {
+                return getLong(data);
+            }
+            else {
+                return null;
+            }
         }
 
         @Override
         public long getLong(DidoData data) {
-            return ((Data) data).fields[index].uintValue();
+            return extractLong(data, FieldEntry::uintValue);
         }
     }
 
@@ -501,7 +555,7 @@ public class DidoOmmData implements HasSchema {
 
         @Override
         public String getString(DidoData data) {
-            return ((Data) data).fields[index].ascii().ascii();
+            return extract(data, fe -> fe.ascii().ascii());
         }
     }
 
@@ -535,7 +589,7 @@ public class DidoOmmData implements HasSchema {
 
         @Override
         public String getString(DidoData data) {
-            return ((Data) data).fields[index].rmtes().rmtes().toString();
+            return extract(data, fe -> fe.rmtes().rmtes().toString());
         }
     }
 

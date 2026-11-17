@@ -1,5 +1,6 @@
 package dido.elsewhere.ema;
 
+import com.refinitiv.ema.access.EmaFactory;
 import com.refinitiv.ema.access.FieldEntry;
 import com.refinitiv.ema.access.FieldList;
 import com.refinitiv.ema.access.JUnitTestConnect;
@@ -14,7 +15,20 @@ import java.util.Objects;
 
 public class DidoEmaTestUtil {
 
-    static com.refinitiv.eta.codec.DataDictionary etaDictionary() {
+    public static DataDictionary stanadardDictionary() {
+        String fieldDictionary = Objects.requireNonNull(
+                DidoEmaTestUtil.class.getResource("/dictionary/RDMFieldDictionary")).getFile();
+        String enumTypeDictionary = Objects.requireNonNull(
+                DidoEmaTestUtil.class.getResource("/dictionary/enumtype.def")).getFile();
+
+        DataDictionary dictionary = EmaFactory.createDataDictionary();
+        dictionary.loadFieldDictionary(fieldDictionary);
+        dictionary.loadEnumTypeDictionary(enumTypeDictionary);
+
+        return dictionary;
+    }
+
+    public static com.refinitiv.eta.codec.DataDictionary etaDictionary() {
 
         String fieldDictionary = Objects.requireNonNull(
                 DidoEmaTestUtil.class.getResource("/dictionary/RDMFieldDictionary")).getFile();
@@ -30,7 +44,7 @@ public class DidoEmaTestUtil {
         return etaDictionary;
     }
 
-    static com.refinitiv.eta.codec.DataDictionary etaDictionary(DataDictionary emaDictionary) {
+    public static com.refinitiv.eta.codec.DataDictionary etaDictionary(DataDictionary emaDictionary) {
 
         try {
             Method method = emaDictionary.getClass().getDeclaredMethod("rsslDataDictionary");
@@ -60,7 +74,7 @@ public class DidoEmaTestUtil {
         return flDec;
     }
 
-    public static List<FieldEntry> entriesFor(FieldList fieldList) {
+    public static List<FieldEntry> fieldEntriesFrom(FieldList fieldList) {
 
         List<FieldEntry> fieldEntries = new ArrayList<>();
         for (FieldEntry fieldEntry : fieldList) {
@@ -70,5 +84,9 @@ public class DidoEmaTestUtil {
         }
 
         return fieldEntries;
+    }
+
+    public static List<FieldEntry> loadedFieldEntries(FieldList fieldList, DataDictionary dictionary) {
+        return fieldEntriesFrom(loadedFieldList(fieldList, dictionary));
     }
 }
