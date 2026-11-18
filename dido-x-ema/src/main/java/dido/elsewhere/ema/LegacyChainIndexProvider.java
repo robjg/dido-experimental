@@ -4,18 +4,26 @@ import com.refinitiv.ema.access.EmaFactory;
 import com.refinitiv.ema.access.FieldEntry;
 import com.refinitiv.ema.access.FieldList;
 import com.refinitiv.ema.rdm.DataDictionary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.function.Function;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-public class LegacyChainIndexProvider extends LegacyChainIndex
+public class LegacyChainIndexProvider
         implements LegacyChainProvider {
 
-    public final Function<? super Integer, ? extends String> iToChain = DEFAULT_I_TO_CHAIN_FN;
+    private static final Logger logger = LoggerFactory.getLogger(LegacyChainIndexProvider.class);
+
+    private final LegacyChainIndex helper;
 
     private final FieldReady prevLrField;
 
     private final FieldReady nextLrField;
+
+    private final FieldReady refCountField;
 
     private final int symbolsPerRecord;
 
@@ -25,56 +33,60 @@ public class LegacyChainIndexProvider extends LegacyChainIndex
 
     private final Map<String, ChainRecord> chainRecords = new HashMap<>();
 
-    ChainRecord currentChain;
+    private ChainRecord currentChain;
 
-    int lastIndex = 0;
+    private int lastIndex;
 
-    private LegacyChainIndexProvider(Settings settings,
+    private LegacyChainIndexProvider(LegacyChainIndex helper,
                                      FieldReady prevLrField,
                                      FieldReady nextLrField,
+                                     FieldReady refCountField,
                                      int symbolsPerRecord,
                                      List<FieldReady> fieldEntries
     ) {
-        super(settings);
+        this.helper = helper;
         this.prevLrField = prevLrField;
         this.nextLrField = nextLrField;
+        this.refCountField = refCountField;
         this.symbolsPerRecord = symbolsPerRecord;
         this.fieldEntries = fieldEntries;
+        this.lastIndex = helper.firstIndex();
     }
 
     public static class Settings extends LegacyChainIndex.Settings<Settings>
             implements LegacyChainProviderConfig {
 
-        private Function<? super Integer, ? extends String> nToField;
+        private int symbolsPerRecord;
 
         @Override
         Settings self() {
             return this;
         }
 
+        public Settings symbolsPerRecord(int symbolsPerRecord) {
+            this.symbolsPerRecord = symbolsPerRecord;
+            return self();
+        }
+
         @Override
         public LegacyChainIndexProvider forDictionary(DataDictionary dictionary) {
 
-            FieldReady prevLrField = field(dictionary, prevLinkName());
+            LegacyChainIndex helper = new LegacyChainIndex(this, dictionary);
 
-            FieldReady nextLrField = field(dictionary, nextLinkName());
-
-            Function<? super Integer, ? extends String> nToField =
-                    Objects.requireNonNullElse(this.nToField, DEFAULT_N_TO_FIELD_FN);
-
-            int symbolsPerRecord = symbolsPerRecord();
+            int symbolsPerRecord = this.symbolsPerRecord == 0 ?
+                    14 : this.symbolsPerRecord;
 
             List<FieldReady> fieldEntries = new ArrayList<>();
 
-            for (int i = 1; i <= symbolsPerRecord; i++) {
+            for (int i = helper.firstLink(); i <= symbolsPerRecord; i++) {
 
-                String fieldName = nToField.apply(i);
-                fieldEntries.add(field(dictionary, fieldName));
+                fieldEntries.add(fieldReady(helper.linkFieldFid(i)));
             }
 
-            return new LegacyChainIndexProvider(this,
-                    prevLrField,
-                    nextLrField,
+            return new LegacyChainIndexProvider(helper,
+                    fieldReady(helper.prevLinkFid()),
+                    fieldReady(helper.nextLinkFid()),
+                    fieldReady(helper.refCountFid()),
                     symbolsPerRecord,
                     fieldEntries);
         }
@@ -92,12 +104,14 @@ public class LegacyChainIndexProvider extends LegacyChainIndex
     public void onKey(String key) {
 
         if (this.currentChain == null) {
-            currentChain = new ChainRecord(iToChain.apply(lastIndex++), null);
+            currentChain = new ChainRecord(helper.indexChainName(lastIndex++), null);
+            logger.debug("Created first chain {}", currentChain.chainName);
         }
         else if (currentChain.size() == symbolsPerRecord) {
-            String nextName = iToChain.apply(lastIndex++);
+            String nextName = helper.indexChainName(lastIndex++);
             currentChain.nextLr = nextName;
             currentChain = new ChainRecord(nextName, currentChain.chainName);
+            logger.debug("Created new chain {}", currentChain.chainName);
         }
 
         currentChain.addSymbol(key);
@@ -107,6 +121,7 @@ public class LegacyChainIndexProvider extends LegacyChainIndex
     public void onDelete(String key) {
 
     }
+
 
     @Override
     public FieldList chainFor(String chainName) {
@@ -155,6 +170,7 @@ public class LegacyChainIndexProvider extends LegacyChainIndex
 
                 fieldList.add(entry.getValue().ascii(entry.getKey()));
             }
+            fieldList.add(refCountField.integer(symbolToFid.size()));
 
             return fieldList;
         }
@@ -170,10 +186,14 @@ public class LegacyChainIndexProvider extends LegacyChainIndex
         FieldEntry ascii(String ascii) {
             return fieldEntry.ascii(fid, ascii);
         }
+
+        FieldEntry integer(int i) {
+            return fieldEntry.intValue(fid, i);
+        }
     }
 
-    static FieldReady field(DataDictionary dictionary, String fieldName) {
+    static FieldReady fieldReady(int fid) {
 
-        return new FieldReady(fieldId(dictionary, fieldName), EmaFactory.createFieldEntry());
+        return new FieldReady(fid, EmaFactory.createFieldEntry());
     }
 }

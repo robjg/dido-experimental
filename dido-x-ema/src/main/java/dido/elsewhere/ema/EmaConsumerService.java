@@ -65,10 +65,15 @@ public class EmaConsumerService {
 
     /**
      * @oddjob.description List of symbols.
-     * More options required.
-     * @oddjob.required No. Defaults to "."
+     * @oddjob.required No.
      */
     private List<String> symbols;
+
+    /**
+     * @oddjob.description Publisher of symbols.
+     * @oddjob.required No.
+     */
+    private KeyPublisher<String> keyPublisher;
 
     /**
      * @oddjob.description Required for the table.
@@ -104,15 +109,16 @@ public class EmaConsumerService {
         SchemaAware schemaAware = to instanceof SchemaAware ?
                 (SchemaAware) to : null;
 
-        List<String> symbols = Objects.requireNonNull(this.symbols);
-
-        KeyPublisher<String> keyAvailability = new KeyPublisher<String>() {
-            @Override
-            public QuietlyCloseable subscribeKeys(KeyConsumer<? super String> keyConsumer, SubscriptionOptions options) {
-                symbols.forEach(keyConsumer::onKey);
-                return () -> {};
-            }
-        };
+        KeyPublisher<String> keyAvailability = this.keyPublisher;
+        if (this.symbols != null) {
+            keyAvailability = new KeyPublisher<String>() {
+                @Override
+                public QuietlyCloseable subscribeKeys(KeyConsumer<? super String> keyConsumer, SubscriptionOptions options) {
+                    symbols.forEach(keyConsumer::onKey);
+                    return () -> {};
+                }
+            };
+        }
 
         CompletableFuture<Void> future = new CompletableFuture<>();
 
@@ -202,6 +208,14 @@ public class EmaConsumerService {
         this.symbols = symbols;
     }
 
+    public KeyPublisher<String> getKeyPublisher() {
+        return keyPublisher;
+    }
+
+    public void setKeyPublisher(KeyPublisher<String> keyPublisher) {
+        this.keyPublisher = keyPublisher;
+    }
+
     public DataSchema getSchema() {
         return schema;
     }
@@ -216,6 +230,14 @@ public class EmaConsumerService {
 
     public void setPartialSchema(boolean partialSchema) {
         this.partialSchema = partialSchema;
+    }
+
+    public LegacyChainConsumerConfig getLegacyChain() {
+        return legacyChain;
+    }
+
+    public void setLegacyChain(LegacyChainConsumerConfig legacyChain) {
+        this.legacyChain = legacyChain;
     }
 
     public KeyedDataConsumer<String> getTo() {

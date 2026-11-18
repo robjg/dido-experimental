@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<oddjob id="oddjob">
+    <job>
+        <bus:bus xmlns:bus="oddjob:beanbus">
+            <of>
+                <lseg:ema-consumer configPath="${oddjob.dir}/../config/EmaConfigConsumer.xml"
+                                   host="localhost:14002" id="consumer" serviceName="DIRECT_FEED" xmlns:lseg="oddjob:lseg">
+                    <schema>
+                        <value value="#{Java.type('dido.elsewhere.ema.TickingTableService').SCHEMA}"/>
+                    </schema>
+                    <to>
+                        <value value="${table}"/>
+                    </to>
+                    <legacyChain>
+                        <bean class="dido.elsewhere.ema.IndexConsumerConfigSupplier"
+                        firstIndex="5" linkFieldFormat="LONGLINK%d"
+                              prevLrName="LONGPREVLR" nextLrName="LONGNEXTLR"
+                              refCountName="REF_COUNT"
+                        chainNameFormat="Foo.%d">
+                        </bean>
+                    </legacyChain>
+                </lseg:ema-consumer>
+                <dido:table id="table" xmlns:dido="oddjob:dido"/>
+            </of>
+        </bus:bus>
+    </job>
+</oddjob>

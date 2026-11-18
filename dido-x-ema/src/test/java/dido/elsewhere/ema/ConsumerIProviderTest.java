@@ -94,4 +94,72 @@ class ConsumerIProviderTest {
         providerOddjob.destroy();
 
     }
+
+    @Test
+    void legacyIndexExample() throws InterruptedException, ArooaConversionException {
+
+        File providerConfig = new File(Objects.requireNonNull(
+                getClass().getResource("/examples/LegacyIndexIProvider.xml")).getFile());
+        File clientConfig = new File(Objects.requireNonNull(
+                getClass().getResource("/examples/LegacyIndexConsumer.xml")).getFile());
+
+        Oddjob providerOddjob = new Oddjob();
+        providerOddjob.setFile(providerConfig);
+
+        StateSteps serverStates = new StateSteps(providerOddjob);
+        serverStates.startCheck(StateConditions.READY,
+                StateConditions.EXECUTING, StateConditions.STARTED);
+
+        providerOddjob.run();
+
+        serverStates.checkWait();
+
+        Oddjob clientOddjob = new Oddjob();
+        clientOddjob.setFile(clientConfig);
+
+        StateSteps clientStates = new StateSteps(clientOddjob);
+        clientStates.startCheck(StateConditions.READY,
+                StateConditions.EXECUTING, StateConditions.ACTIVE, StateConditions.STARTED);
+
+        clientOddjob.run();
+
+        clientStates.checkWait();
+
+        DataTable<String> clientTable = new OddjobLookup(clientOddjob)
+                .lookup("table.table",
+                        new TypeToken<DataTable<String>>() {}.getType());
+
+        // Wait for a few table updates
+        CountDownLatch latch = new CountDownLatch(3);
+
+        logger.info("** Subscribing to Ticks");
+
+        try (QuietlyCloseable ignored = clientTable.subscribeKeyedData(new KeyedDataConsumer<>() {
+            @Override
+            public void onData(String key, DidoData data) {
+            }
+
+            @Override
+            public void onPartial(String key, PartialData partial) {
+                logger.info("** On Partial {}", partial);
+                latch.countDown();
+            }
+
+            @Override
+            public void onDelete(String key) {
+
+            }
+        })) {
+
+            if (!latch.await(10, TimeUnit.SECONDS)) {
+                assertThat("Ticker Missing", false);
+            }
+
+            assertThat(clientTable.size(), is(3));
+        }
+
+        clientOddjob.destroy();
+        providerOddjob.destroy();
+
+    }
 }

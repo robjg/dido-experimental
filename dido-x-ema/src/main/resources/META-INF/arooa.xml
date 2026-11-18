@@ -1,5 +1,9 @@
 <arooa:descriptor xmlns:arooa="http://rgordon.co.uk/oddjob/arooa"
                   prefix="lseg" namespace="oddjob:lseg">
+    <conversions>
+        <arooa:conversion className="dido.elsewhere.ema.IndexConsumerConfigSupplier" methodName="get" arooaValue="true"/>
+        <arooa:conversion className="dido.elsewhere.ema.IndexProviderConfigSupplier" methodName="get" arooaValue="true"/>
+    </conversions>
     <components>
         <arooa:bean-def element='ema-consumer'
                         className='dido.elsewhere.ema.EmaConsumerService'>

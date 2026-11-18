@@ -10,6 +10,11 @@ public class IndexConsumerConfigSupplier extends IndexProviderBeanBase
 
         return LegacyChainIndexConsumer.with()
                 .firstIndex(getFirstIndex())
-                .symbolsPerRecord(getSymbolsPerRecord());
+                .chainNameFormat(getChainNameFormat())
+                .firstLink(getFirstLink())
+                .prevLrName(getPrevLrName())
+                .nextLrName(getNextLrName())
+                .linkFieldFormat(getLinkFieldFormat())
+                .refCountName(getRefCountName());
     }
 }

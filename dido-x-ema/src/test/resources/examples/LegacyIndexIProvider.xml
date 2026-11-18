@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<oddjob id="oddjob">
+    <job>
+        <sequential>
+            <jobs>
+                <bean class="dido.elsewhere.ema.TickingTableService" id="tickerTable"/>
+                <lseg:ema-iprovider
+                        fieldDictionaryPath="${oddjob.dir}/../dictionary/RDMFieldDictionary"
+                        enumTypeDictionaryPath="${oddjob.dir}/../dictionary/enumtype.def"
+                        configPath="${oddjob.dir}/../config/EmaConfigIProvider.xml"
+                        xmlns:lseg="oddjob:lseg">
+                    <table>
+                        <value value="${tickerTable.table}"/>
+                    </table>
+                    <legacyChain>
+                        <bean class="dido.elsewhere.ema.IndexProviderConfigSupplier"
+                              firstIndex="5" linkFieldFormat="LONGLINK%d"
+                              prevLrName="LONGPREVLR" nextLrName="LONGNEXTLR"
+                              refCountName="REF_COUNT"
+                              chainNameFormat="Foo.%d" symbolsPerRecord="2">
+                        </bean>
+                    </legacyChain>
+                </lseg:ema-iprovider>
+            </jobs>
+        </sequential>
+    </job>
+</oddjob>

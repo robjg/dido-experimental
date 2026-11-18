@@ -103,6 +103,8 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
         public QuietlyCloseable from(DataTable<String> dataTable) {
 
+            List<AutoCloseable> closeTasks = new ArrayList<>();
+
             String serviceName = Objects.requireNonNullElse(this.serviceName, "DIRECT_FEED");
 
             Path dictionaryFile = Objects.requireNonNullElse(fieldDictionaryPath,
@@ -117,9 +119,12 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
             DidoToOmm didoToOmm = DidoToOmm.forSchema(dataTable.getSchema(), dictionary);
 
-            LegacyChainProvider legacyChainProvider = Optional.ofNullable(this.legacyChainProviderConfig)
-                .map(lcpc -> lcpc.forDictionary(dictionary))
-                    .orElseGet(LegacyChainProvider.NoOp::new);
+            LegacyChainProvider legacyChainProvider = null;
+            if (this.legacyChainProviderConfig != null) {
+                legacyChainProvider = this.legacyChainProviderConfig.forDictionary(dictionary);
+                closeTasks.add(dataTable.subscribeKeys(legacyChainProvider));
+            }
+
 
             DidoOmmIProvider appClient = new DidoOmmIProvider(
                     serviceName,
@@ -148,12 +153,18 @@ public class DidoOmmIProvider implements OmmProviderClient {
 
             OmmProvider provider = EmaFactory.createOmmProvider(config, appClient);
 
-            DidoSubscription subscription = appClient.init(provider);
+            closeTasks.add(appClient.init(provider));
 
             logger.info("IProvider for {} initialized", serviceName);
 
             return () -> {
-                subscription.close();
+                closeTasks.forEach(closeTask -> {
+                    try {
+                        closeTask.close();
+                    } catch (Exception e) {
+                        logger.warn("Failed closing {}", closeTask, e);
+                    }
+                });
                 provider.uninitialize();
             };
         }
@@ -308,7 +319,10 @@ public class DidoOmmIProvider implements OmmProviderClient {
                     .add(handle);
         }
 
-        FieldList fieldList = legacyChain.chainFor(symbolName);
+        FieldList fieldList = null;
+        if (legacyChain != null) {
+            fieldList = legacyChain.chainFor(symbolName);
+        }
 
         if (fieldList == null) {
 

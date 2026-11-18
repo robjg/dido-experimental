@@ -1,18 +1,22 @@
 package dido.elsewhere.ema;
 
-import java.util.function.Function;
-
 public class IndexProviderBeanBase {
 
     private int firstIndex;
 
     private int symbolsPerRecord;
 
-    private Function<? super Integer, ? extends String> iToCain;
+    private String chainNameFormat;
+
+    private Integer firstLink;
 
     private String prevLrName;
 
     private String nextLrName;
+
+    private String refCountName;
+
+    private String linkFieldFormat;
 
     public int getFirstIndex() {
         return firstIndex;
@@ -30,12 +34,20 @@ public class IndexProviderBeanBase {
         this.symbolsPerRecord = symbolsPerRecord;
     }
 
-    public Function<? super Integer, ? extends String> getiToCain() {
-        return iToCain;
+    public String getChainNameFormat() {
+        return chainNameFormat;
     }
 
-    public void setiToCain(Function<? super Integer, ? extends String> iToCain) {
-        this.iToCain = iToCain;
+    public void setChainNameFormat(String chainNameFormat) {
+        this.chainNameFormat = chainNameFormat;
+    }
+
+    public Integer getFirstLink() {
+        return firstLink;
+    }
+
+    public void setFirstLink(Integer firstLink) {
+        this.firstLink = firstLink;
     }
 
     public String getPrevLrName() {
@@ -52,5 +64,21 @@ public class IndexProviderBeanBase {
 
     public void setNextLrName(String nextLrName) {
         this.nextLrName = nextLrName;
+    }
+
+    public String getLinkFieldFormat() {
+        return linkFieldFormat;
+    }
+
+    public String getRefCountName() {
+        return refCountName;
+    }
+
+    public void setRefCountName(String refCountName) {
+        this.refCountName = refCountName;
+    }
+
+    public void setLinkFieldFormat(String linkFieldFormat) {
+        this.linkFieldFormat = linkFieldFormat;
     }
 }

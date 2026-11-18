@@ -1,18 +1,18 @@
 package dido.elsewhere.ema;
 
 import com.refinitiv.ema.access.EmaFactory;
-import com.refinitiv.ema.access.FieldEntry;
 import com.refinitiv.ema.access.FieldList;
 import com.refinitiv.ema.rdm.DataDictionary;
 import dido.flow.KeyConsumer;
 import dido.flow.QuietlyCloseable;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -31,31 +31,19 @@ class LegacyChainIndexTest {
         dictionary.loadFieldDictionary(fieldDictionary);
         dictionary.loadEnumTypeDictionary(enumTypeDictionary);
 
-        LegacyChainProvider legacyChain = LegacyChainIndexProvider.with()
+        LegacyChainProvider legacyChainProvider = LegacyChainIndexProvider.with()
                 .symbolsPerRecord(2)
                 .forDictionary(dictionary);
 
-        legacyChain.onKey("APPLE");
-        legacyChain.onKey("PEAR");
-        legacyChain.onKey("ORANGE");
+        legacyChainProvider.onKey("APPLE");
+        legacyChainProvider.onKey("PEAR");
+        legacyChainProvider.onKey("ORANGE");
 
         Function<String, FieldList> loadedFieldList =
                 chainName -> {
-
-                    FieldList fieldList = legacyChain.chainFor(chainName);
-
+                    FieldList fieldList = legacyChainProvider.chainFor(chainName);
                     return DidoEmaTestUtil.loadedFieldList(fieldList, dictionary);
                 };
-
-        List<FieldEntry> entries = DidoEmaTestUtil.fieldEntriesFrom(
-                loadedFieldList.apply("0#.INDEX"));
-
-        Map<String, String> mapped = entries.stream()
-                .collect(Collectors.toMap(
-                        FieldEntry::name,
-                        entry -> entry.ascii().ascii()));
-
-        System.out.println(mapped);
 
         LegacyChainConsumer chainConsumer = LegacyChainIndexConsumer
                 .forDictionary(dictionary);

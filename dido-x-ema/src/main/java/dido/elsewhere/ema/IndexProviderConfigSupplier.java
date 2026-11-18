@@ -8,10 +8,14 @@ public class IndexProviderConfigSupplier extends IndexProviderBeanBase
     @Override
     public LegacyChainProviderConfig get() {
 
-        return dictionary -> LegacyChainIndexProvider.with()
+        return LegacyChainIndexProvider.with()
                 .firstIndex(getFirstIndex())
+                .chainNameFormat(getChainNameFormat())
                 .symbolsPerRecord(getSymbolsPerRecord())
-                .forDictionary(dictionary);
-
+                .firstLink(getFirstLink())
+                .prevLrName(getPrevLrName())
+                .nextLrName(getNextLrName())
+                .linkFieldFormat(getLinkFieldFormat())
+                .refCountName(getRefCountName());
     }
 }

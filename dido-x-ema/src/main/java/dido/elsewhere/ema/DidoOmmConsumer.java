@@ -171,18 +171,24 @@ public class DidoOmmConsumer implements OmmConsumerClient {
                             ChainConsumerClient chainConsumerClient = new ChainConsumerClient(
                                     consumer, serviceName, legacyChainConsumer);
                             chainConsumerClient.subscribeChain(legacyChainConsumer.rootChainName());
-
                             closeTasks.add(chainConsumerClient);
+
+                            logger.info("Starting Key Subscription to Legacy Chain {}", legacyChainConsumer);
+                            KeySubscriber keySubscriber = new KeySubscriber(consumer, serviceName, client, reqMsg);
+                            closeTasks.add(legacyChainConsumer.subscribeKeys(keySubscriber));
+                            closeTasks.add(keySubscriber);
                         }
                 );
             }
 
-            dictionaryConsumers.add(ignored -> {
-                logger.info("Starting Key Subscription to {}", keyAvailability);
-                KeySubscriber keySubscriber = new KeySubscriber(consumer, serviceName, client, reqMsg);
-                closeTasks.add(keyAvailability.subscribeKeys(keySubscriber));
-                closeTasks.add(keySubscriber);
-            });
+            if (this.keyAvailability != null) {
+                dictionaryConsumers.add(ignored -> {
+                    logger.info("Starting Key Subscription to Key Publisher {}", keyAvailability);
+                    KeySubscriber keySubscriber = new KeySubscriber(consumer, serviceName, client, reqMsg);
+                    closeTasks.add(keyAvailability.subscribeKeys(keySubscriber));
+                    closeTasks.add(keySubscriber);
+                });
+            }
 
             if (started != null) {
                 dictionaryConsumers.add(ignored -> {

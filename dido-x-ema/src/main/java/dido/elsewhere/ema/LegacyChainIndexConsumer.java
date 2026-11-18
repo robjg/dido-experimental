@@ -14,22 +14,35 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public class LegacyChainIndexConsumer extends LegacyChainIndex
+public class LegacyChainIndexConsumer
         implements LegacyChainConsumer {
 
-    private final KeySubscribers<String> keySubscribers =  new KeySubscribers<>();
+    private final KeySubscribers<String> keySubscribers = new KeySubscribers<>();
+
+    private final LegacyChainIndex helper;
+
+    private final DataDictionary dictionary;
 
     private final int prevLrFid;
 
     private final int nextLrFid;
 
+    private final int refCountFid;
+
+    private final Map<Integer, Integer> linkFids = new HashMap<>();
+
     private final Map<String, Set<String>> chainRecords = new HashMap<>();
 
-    public LegacyChainIndexConsumer(Settings settings,
-                                    int prevLrFid, int nextLrFid) {
-        super(settings);
+    public LegacyChainIndexConsumer(LegacyChainIndex helper,
+                                    DataDictionary dictionary,
+                                    int prevLrFid,
+                                    int nextLrFid,
+                                    int refCountFid) {
+        this.helper = helper;
+        this.dictionary = dictionary;
         this.prevLrFid = prevLrFid;
         this.nextLrFid = nextLrFid;
+        this.refCountFid = refCountFid;
     }
 
     public static class Settings extends LegacyChainIndex.Settings<Settings>
@@ -43,9 +56,13 @@ public class LegacyChainIndexConsumer extends LegacyChainIndex
         @Override
         public LegacyChainConsumer forDictionary(DataDictionary dictionary) {
 
-            return new LegacyChainIndexConsumer(this,
-                    fieldId(dictionary, prevLinkName()),
-                    fieldId(dictionary, nextLinkName()));
+            LegacyChainIndex helper = new LegacyChainIndex(this, dictionary);
+
+            return new LegacyChainIndexConsumer(helper,
+                    dictionary,
+                    helper.prevLinkFid(),
+                    helper.nextLinkFid(),
+                    helper.refCountFid());
         }
     }
 
@@ -57,6 +74,10 @@ public class LegacyChainIndexConsumer extends LegacyChainIndex
         return with().forDictionary(dictionary);
     }
 
+    @Override
+    public String rootChainName() {
+        return helper.rootChainName();
+    }
 
     @Override
     public void onChain(String chainName,
@@ -65,23 +86,31 @@ public class LegacyChainIndexConsumer extends LegacyChainIndex
 
         Set<String> chainRecord = chainRecords.get(chainName);
 
-        String nextLrName = null;
         Set<String> symbolNames = new HashSet<>();
 
+        Map<Integer, FieldEntry> fields = new HashMap<>();
         for (FieldEntry fieldEntry : fieldList) {
+            fields.put(fieldEntry.fieldId(), fieldEntry);
+        }
 
-            int fid = fieldEntry.fieldId();
-            String value = fieldEntry.ascii().ascii();
-
-            if (fid != prevLrFid) {
-                if (fid == nextLrFid){
-                    nextLrName = value;
-                }
-                else {
-                    symbolNames.add(value);
-                }
+        int firstLink = helper.firstLink();
+        long refCount = fields.get(refCountFid).uintValue();
+        if (refCount > linkFids.size()) {
+            for (int i = Math.max(firstLink, linkFids.size()); i <= refCount; i++) {
+                linkFids.put(i, helper.fieldId(helper.linkFieldName(i)));
             }
         }
+
+        for (int i = firstLink; i <= refCount; i++) {
+            int fid = linkFids.get(i);
+            FieldEntry fieldEntry = fields.get(fid);
+            if (fieldEntry != null) {
+                symbolNames.add(fieldEntry.ascii().ascii());
+            }
+        }
+
+        FieldEntry nextLrEntry = fields.get(nextLrFid);
+        String nextLrName = nextLrEntry == null ? null : nextLrEntry.ascii().ascii();
 
         if (nextLrName != null && !chainRecords.containsKey(nextLrName)) {
             chainSubscriber.accept(nextLrName);
@@ -94,8 +123,7 @@ public class LegacyChainIndexConsumer extends LegacyChainIndex
 
             newSymbols = symbolNames;
             deletedSymbols = Set.of();
-        }
-        else {
+        } else {
 
             newSymbols = new HashSet<>(symbolNames);
             newSymbols.removeAll(chainRecord);
@@ -118,7 +146,7 @@ public class LegacyChainIndexConsumer extends LegacyChainIndex
     @Override
     public QuietlyCloseable subscribeKeys(KeyConsumer<? super String> keyConsumer, SubscriptionOptions options) {
         if (options.snapshot()) {
-            for  (Set<String> chainRecord : chainRecords.values()) {
+            for (Set<String> chainRecord : chainRecords.values()) {
                 for (String symbolName : chainRecord) {
                     keySubscribers.onKey(symbolName);
                 }
@@ -127,9 +155,9 @@ public class LegacyChainIndexConsumer extends LegacyChainIndex
         }
         if (options.delta()) {
             return keySubscribers.addKeySubscriber(keyConsumer);
-        }
-        else {
-            return () -> {};
+        } else {
+            return () -> {
+            };
         }
     }
 
