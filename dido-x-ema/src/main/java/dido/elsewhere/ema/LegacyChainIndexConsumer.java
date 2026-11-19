@@ -8,11 +8,9 @@ import dido.flow.QuietlyCloseable;
 import dido.flow.SubscriptionOptions;
 import dido.flow.util.KeySubscribers;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class LegacyChainIndexConsumer
         implements LegacyChainConsumer {
@@ -21,11 +19,9 @@ public class LegacyChainIndexConsumer
 
     private final LegacyChainIndex helper;
 
-    private final DataDictionary dictionary;
+    private final StringField prevLrField;
 
-    private final int prevLrFid;
-
-    private final int nextLrFid;
+    private final StringField nextLrField;
 
     private final int refCountFid;
 
@@ -33,15 +29,13 @@ public class LegacyChainIndexConsumer
 
     private final Map<String, Set<String>> chainRecords = new HashMap<>();
 
-    public LegacyChainIndexConsumer(LegacyChainIndex helper,
-                                    DataDictionary dictionary,
-                                    int prevLrFid,
-                                    int nextLrFid,
-                                    int refCountFid) {
+    LegacyChainIndexConsumer(LegacyChainIndex helper,
+                             StringField prevLrField,
+                             StringField nextLrField,
+                             int refCountFid) {
         this.helper = helper;
-        this.dictionary = dictionary;
-        this.prevLrFid = prevLrFid;
-        this.nextLrFid = nextLrFid;
+        this.prevLrField = prevLrField;
+        this.nextLrField = nextLrField;
         this.refCountFid = refCountFid;
     }
 
@@ -56,12 +50,14 @@ public class LegacyChainIndexConsumer
         @Override
         public LegacyChainConsumer forDictionary(DataDictionary dictionary) {
 
-            LegacyChainIndex helper = new LegacyChainIndex(this, dictionary);
+            LegacyChainIndex helper = LegacyChainIndex.helper(this, dictionary);
+
+            StringField prevLinkField = stringFieldFor(helper.prevLinkField());
+            StringField nextLinkField = stringFieldFor(helper.nextLinkField());
 
             return new LegacyChainIndexConsumer(helper,
-                    dictionary,
-                    helper.prevLinkFid(),
-                    helper.nextLinkFid(),
+                    prevLinkField,
+                    nextLinkField,
                     helper.refCountFid());
         }
     }
@@ -109,11 +105,11 @@ public class LegacyChainIndexConsumer
             }
         }
 
-        FieldEntry nextLrEntry = fields.get(nextLrFid);
-        String nextLrName = nextLrEntry == null ? null : nextLrEntry.ascii().ascii();
+        FieldEntry nextLrEntry = fields.get(nextLrField.fid);
+        String nextLrChain = nextLrEntry == null ? null : nextLrField.toString(nextLrEntry);
 
-        if (nextLrName != null && !chainRecords.containsKey(nextLrName)) {
-            chainSubscriber.accept(nextLrName);
+        if (nextLrChain != null && !chainRecords.containsKey(nextLrChain)) {
+            chainSubscriber.accept(nextLrChain);
         }
 
         Set<String> newSymbols;
@@ -160,5 +156,19 @@ public class LegacyChainIndexConsumer
             };
         }
     }
+
+    record StringField(int fid, Function<FieldEntry, String> extractor) {
+
+        String toString(FieldEntry fieldEntry) {
+            return extractor.apply(fieldEntry);
+        }
+    }
+
+    static StringField stringFieldFor(LegacyChainIndex.DictionaryField de) {
+
+        return new StringField(de.fid(), Objects.requireNonNull(
+                EmaToJava.stringExtractor(de.rwfType()), "No String Extractor for dictionary entry " + de));
+    }
+
 
 }

@@ -27,14 +27,16 @@ public class LegacyChainIndex {
 
     private final int firstLink;
 
-    private final String prevLrName;
+    private final DictionaryField prevLrField;
 
-    private final String nextLrName;
+    private final DictionaryField nextLrField;
 
     private final String refCountName;
 
-    public LegacyChainIndex(Settings<?> settings,
-                               DataDictionary dictionary) {
+    private LegacyChainIndex(Settings<?> settings,
+                               DataDictionary dictionary,
+                            DictionaryField prevLrField,
+                            DictionaryField nextLrField) {
         this.dictionary = dictionary;
         this.chainNameFormat = Objects.requireNonNullElse(
                 settings.chainNameFormat, DEFAULT_CHAIN_NAME_FORMAT);
@@ -42,13 +44,22 @@ public class LegacyChainIndex {
         this.linkFieldFormat = Objects.requireNonNullElse(
                 settings.linkFieldFormat, DEFAULT_LINK_FIELD_FORMAT);
         this.firstLink = settings.firstLink == null ? 1 : settings.firstLink;
-        this.prevLrName = Objects.requireNonNullElse(
-                settings.prevLrName, DEFAULT_PREV_LINK_NAME);
-        this.nextLrName = Objects.requireNonNullElse(
-                settings.nextLrName, DEFAULT_NEXT_LINK_NAME);
+        this.prevLrField = prevLrField;
+        this.nextLrField = nextLrField;
         this.refCountName = Objects.requireNonNullElse(
                 settings.refCountName, DEFAULT_REF_COUNT_NAME);
     }
+
+    public static LegacyChainIndex helper(Settings<?> settings, DataDictionary dictionary) {
+
+        DictionaryField prevLrDe = dictionaryEntry(Objects.requireNonNullElse(
+                                                  settings.prevLrName, DEFAULT_PREV_LINK_NAME), dictionary);
+        DictionaryField nextLrDe = dictionaryEntry(Objects.requireNonNullElse(
+                                                settings.nextLrName, DEFAULT_NEXT_LINK_NAME), dictionary);
+
+        return new LegacyChainIndex(settings, dictionary, prevLrDe, nextLrDe);
+    }
+
 
     public abstract static class Settings<B extends Settings<B>>  {
 
@@ -122,19 +133,27 @@ public class LegacyChainIndex {
     }
 
     public String prevLinkName() {
-        return this.prevLrName;
+        return this.prevLrField.name();
     }
 
     public int prevLinkFid() {
-        return fieldId(prevLrName);
+        return this.prevLrField.fid();
+    }
+
+    public DictionaryField prevLinkField() {
+        return this.prevLrField;
     }
 
     public String nextLinkName() {
-        return this.nextLrName;
+        return this.nextLrField.name();
     }
 
     public int nextLinkFid() {
-        return fieldId(nextLrName);
+        return this.nextLrField.fid();
+    }
+
+    public DictionaryField nextLinkField() {
+        return this.nextLrField;
     }
 
     public String refCountName() {
@@ -153,11 +172,24 @@ public class LegacyChainIndex {
         return fieldId(linkFieldName(linkNum));
     }
 
-
     public int fieldId(String fieldName) {
 
         DictionaryEntry dictionaryEntry = Objects.requireNonNull(
                 dictionary.entry(fieldName), "No Field in dictionary " + fieldName);
         return dictionaryEntry.fid();
+    }
+
+    public static DictionaryField dictionaryEntry(String fieldName, DataDictionary dictionary) {
+
+        DictionaryEntry dictionaryEntry =
+
+         Objects.requireNonNull(
+                dictionary.entry(fieldName), "No Field in dictionary " + fieldName);
+
+        return new DictionaryField(fieldName, dictionaryEntry.fid(), dictionaryEntry.rwfType());
+    }
+
+    public record DictionaryField(String name, int fid, int rwfType) {
+
     }
 }

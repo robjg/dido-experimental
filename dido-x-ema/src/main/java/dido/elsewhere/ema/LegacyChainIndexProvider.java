@@ -71,7 +71,7 @@ public class LegacyChainIndexProvider
         @Override
         public LegacyChainIndexProvider forDictionary(DataDictionary dictionary) {
 
-            LegacyChainIndex helper = new LegacyChainIndex(this, dictionary);
+            LegacyChainIndex helper = LegacyChainIndex.helper(this, dictionary);
 
             int symbolsPerRecord = this.symbolsPerRecord == 0 ?
                     14 : this.symbolsPerRecord;
