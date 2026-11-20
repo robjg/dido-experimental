@@ -168,6 +168,10 @@ public class LegacyChainIndex {
         return String.format(linkFieldFormat, linkNum);
     }
 
+    protected DictionaryField linkField(int linkNum) {
+        return dictionaryField(linkFieldName(linkNum));
+    }
+
     protected int linkFieldFid(int linkNum) {
         return fieldId(linkFieldName(linkNum));
     }
@@ -177,6 +181,10 @@ public class LegacyChainIndex {
         DictionaryEntry dictionaryEntry = Objects.requireNonNull(
                 dictionary.entry(fieldName), "No Field in dictionary " + fieldName);
         return dictionaryEntry.fid();
+    }
+
+    public DictionaryField dictionaryField(String fieldName) {
+        return dictionaryEntry(fieldName, dictionary);
     }
 
     public static DictionaryField dictionaryEntry(String fieldName, DataDictionary dictionary) {

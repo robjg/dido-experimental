@@ -25,7 +25,7 @@ public class LegacyChainIndexConsumer
 
     private final int refCountFid;
 
-    private final Map<Integer, Integer> linkFids = new HashMap<>();
+    private final Map<Integer, StringField> linkFids = new HashMap<>();
 
     private final Map<String, Set<String>> chainRecords = new HashMap<>();
 
@@ -93,15 +93,16 @@ public class LegacyChainIndexConsumer
         long refCount = fields.get(refCountFid).uintValue();
         if (refCount > linkFids.size()) {
             for (int i = Math.max(firstLink, linkFids.size()); i <= refCount; i++) {
-                linkFids.put(i, helper.fieldId(helper.linkFieldName(i)));
+                linkFids.put(i, stringFieldFor(helper.linkField(i)));
             }
         }
 
         for (int i = firstLink; i <= refCount; i++) {
-            int fid = linkFids.get(i);
-            FieldEntry fieldEntry = fields.get(fid);
+            StringField field = linkFids.get(i);
+            FieldEntry fieldEntry = fields.get(field.fid());
             if (fieldEntry != null) {
-                symbolNames.add(fieldEntry.ascii().ascii());
+
+                symbolNames.add(field.toString(fieldEntry));
             }
         }
 
@@ -169,6 +170,4 @@ public class LegacyChainIndexConsumer
         return new StringField(de.fid(), Objects.requireNonNull(
                 EmaToJava.stringExtractor(de.rwfType()), "No String Extractor for dictionary entry " + de));
     }
-
-
 }
