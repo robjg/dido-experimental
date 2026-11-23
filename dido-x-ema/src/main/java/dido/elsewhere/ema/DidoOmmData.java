@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
-import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -69,8 +68,7 @@ public class DidoOmmData implements HasSchema {
 
             if (partialSchema || schema == null) {
                 return ofUnknown(dictionary, fids);
-            }
-            else {
+            } else {
                 return ofKnown(dictionary, Arrays.stream(fids)
                         .boxed()
                         .collect(Collectors.toSet()));
@@ -274,19 +272,17 @@ public class DidoOmmData implements HasSchema {
                                    int nextIndex,
                                    DataSchema schema) {
 
-
-
         String name = dictionaryEntry.acronym();
         SchemaField existing = schema.getSchemaFieldNamed(name);
 
         Type type;
         if (existing == null) {
-                    type = classFor(dictionaryEntry);
-                    if (type == null) {
-                        throw new IllegalArgumentException("Unrecognized type for Fid: " + dictionaryEntry.fid() +
-                                " Name = " + name + " DataType: " +
-                                DataType.asString(dictionaryEntry.rwfType()) + " Value: ");
-                    }
+            type = classFor(dictionaryEntry);
+            if (type == null) {
+                throw new IllegalArgumentException("Unrecognized type for Fid: " + dictionaryEntry.fid() +
+                        " Name = " + name + " DataType: " +
+                        DataType.asString(dictionaryEntry.rwfType()) + " Value: ");
+            }
         } else {
             type = existing.getType();
         }
@@ -299,15 +295,18 @@ public class DidoOmmData implements HasSchema {
         int dataType = dictionaryEntry.rwfType();
 
         return switch (dataType) {
+            case DataType.DataTypes.DOUBLE -> double.class;
             case DataType.DataTypes.REAL -> dictionaryEntry.fieldType() == MfFieldTypes.INTEGER ?
                     long.class : double.class;
+            case DataType.DataTypes.FLOAT -> float.class;
             case DataType.DataTypes.DATE -> LocalDate.class;
             case DataType.DataTypes.TIME -> LocalTime.class;
             case DataType.DataTypes.DATETIME -> LocalDateTime.class;
             case DataType.DataTypes.INT, DataType.DataTypes.UINT -> long.class;
-            case DataType.DataTypes.ASCII, DataType.DataTypes.ERROR -> String.class;
+            case DataType.DataTypes.ASCII,
+                 DataType.DataTypes.ERROR,
+                 DataType.DataTypes.RMTES -> String.class;
             case DataType.DataTypes.ENUM -> int.class;
-            case DataType.DataTypes.RMTES -> ByteBuffer.class;
             default -> null;
         };
     }
@@ -318,23 +317,55 @@ public class DidoOmmData implements HasSchema {
 
         int dataType = dictionaryEntry.rwfType();
 
-        return switch (dataType) {
-            case DataType.DataTypes.REAL -> dictionaryEntry.fieldType() == MfFieldTypes.INTEGER ?
-                    type == long.class || type == Long.class ?
-                    new RealLongGetter(arrayIndex) :
-                    new RealIntGetter(arrayIndex) :
-                    new RealGetter(arrayIndex);
-            case DataType.DataTypes.DATE -> new DateGetter(arrayIndex);
-            case DataType.DataTypes.TIME -> new TimeGetter(arrayIndex);
-            case DataType.DataTypes.DATETIME -> new DateTimeGetter(arrayIndex);
-            case DataType.DataTypes.INT -> new IntGetter(arrayIndex);
-            case DataType.DataTypes.UINT -> new UintGetter(arrayIndex);
-            case DataType.DataTypes.ASCII -> new AsciiGetter(arrayIndex);
-            case DataType.DataTypes.ERROR -> new ErrorGetter(arrayIndex);
-            case DataType.DataTypes.ENUM -> new EnumGetter(arrayIndex);
-            case DataType.DataTypes.RMTES -> new RmtesGetter(arrayIndex);
-            default -> null;
-        };
+        FieldGetter fieldGetter = null;
+        if (type == double.class || type == Double.class) {
+            ToDoubleFunction<FieldEntry> doubleExtractor = EmaToJava.doubleExtractor(dataType);
+            if (doubleExtractor != null) {
+                fieldGetter = new DoubleGetter(arrayIndex, doubleExtractor);
+            }
+        } else if (type == float.class || type == Float.class) {
+            ToDoubleFunction<FieldEntry> doubleExtractor = EmaToJava.doubleExtractor(dataType);
+            if (doubleExtractor != null) {
+                fieldGetter = new FloatGetter(arrayIndex, doubleExtractor);
+            }
+        } else if (type == short.class || type == Short.class) {
+            ToLongFunction<FieldEntry> longExtractor = EmaToJava.longExtractor(dataType);
+            if (longExtractor != null) {
+                fieldGetter = new ShortGetter(arrayIndex, longExtractor);
+            }
+        } else if (type == int.class || type == Integer.class) {
+            ToLongFunction<FieldEntry> longExtractor = EmaToJava.longExtractor(dataType);
+            if (longExtractor != null) {
+                fieldGetter = new IntGetter(arrayIndex, longExtractor);
+            }
+        } else if (type == long.class || type == Long.class) {
+            ToLongFunction<FieldEntry> longExtractor = EmaToJava.longExtractor(dataType);
+            if (longExtractor != null) {
+                fieldGetter = new LongGetter(arrayIndex, longExtractor);
+            }
+        } else if (type == String.class) {
+            Function<? super FieldEntry, ? extends String> extractor =
+                    EmaToJava.stringExtractor(dataType);
+            if (extractor != null) {
+                fieldGetter = new StringGetter(arrayIndex, extractor);
+            }
+        } else {
+            fieldGetter = switch (dataType) {
+                case DataType.DataTypes.DATE -> new DateGetter(arrayIndex);
+                case DataType.DataTypes.TIME -> new TimeGetter(arrayIndex);
+                case DataType.DataTypes.DATETIME -> new DateTimeGetter(arrayIndex);
+                case DataType.DataTypes.ERROR -> new ErrorGetter(arrayIndex);
+                case DataType.DataTypes.ENUM -> new EnumGetter(arrayIndex);
+                default -> null;
+            };
+        }
+
+        if (fieldGetter == null) {
+            throw new IllegalArgumentException("No Conversion from " + DataType.asString(
+                    dataType) + " to " + type);
+        } else {
+            return fieldGetter;
+        }
     }
 
     abstract static class OmmFieldGetter extends AbstractFieldGetter {
@@ -354,101 +385,146 @@ public class DidoOmmData implements HasSchema {
             FieldEntry fieldEntry = fieldEntry(data);
             return !(fieldEntry.code() == com.refinitiv.ema.access.Data.DataCode.BLANK);
         }
-
-        <T> T extract(DidoData data, Function<? super FieldEntry, ? extends T> extractor) {
-            FieldEntry fieldEntry = fieldEntry(data);
-            if (fieldEntry.code() == com.refinitiv.ema.access.Data.DataCode.BLANK) {
-                return null;
-            }
-            else {
-                return extractor.apply(fieldEntry);
-            }
-        }
-
-        long extractLong(DidoData data, ToLongFunction<? super FieldEntry> extractor) {
-            FieldEntry fieldEntry = fieldEntry(data);
-            if (fieldEntry.code() == com.refinitiv.ema.access.Data.DataCode.BLANK) {
-                return 0L;
-            }
-            else {
-                return extractor.applyAsLong(fieldEntry);
-            }
-        }
-
-        double extractDouble(DidoData data, ToDoubleFunction<? super FieldEntry> extractor) {
-            FieldEntry fieldEntry = fieldEntry(data);
-            if (fieldEntry.code() == com.refinitiv.ema.access.Data.DataCode.BLANK) {
-                return 0.0;
-            }
-            else {
-                return extractor.applyAsDouble(fieldEntry);
-            }
-        }
     }
 
-    static class RealGetter extends OmmFieldGetter {
+    static class DoubleGetter extends OmmFieldGetter {
 
-        RealGetter(int index) {
+        private final ToDoubleFunction<? super FieldEntry> extractor;
+
+        DoubleGetter(int index, ToDoubleFunction<? super FieldEntry> extractor) {
             super(index);
+            this.extractor = extractor;
         }
 
         @Override
         public Object get(DidoData data) {
             if (has(data)) {
                 return getDouble(data);
-            }
-            else {
+            } else {
                 return null;
             }
         }
 
         @Override
+        public float getFloat(DidoData data) {
+
+            return (float) extractor.applyAsDouble(fieldEntry(data));
+        }
+
+        @Override
         public double getDouble(DidoData data) {
-            return extractDouble(data, fe -> fe.real().asDouble());
+
+            return extractor.applyAsDouble(fieldEntry(data));
         }
     }
 
-    static class RealLongGetter extends OmmFieldGetter {
+    static class FloatGetter extends DoubleGetter {
 
-        RealLongGetter(int index) {
+        FloatGetter(int index, ToDoubleFunction<? super FieldEntry> extractor) {
+            super(index, extractor);
+        }
+
+        @Override
+        public Object get(DidoData data) {
+            if (has(data)) {
+                return getFloat(data);
+            } else {
+                return null;
+            }
+        }
+    }
+
+    static class LongGetter extends OmmFieldGetter {
+
+        private final ToLongFunction<? super FieldEntry> extractor;
+
+        LongGetter(int index, ToLongFunction<? super FieldEntry> extractor) {
             super(index);
+            this.extractor = extractor;
         }
 
         @Override
         public Object get(DidoData data) {
             if (has(data)) {
                 return getLong(data);
-            }
-            else {
+            } else {
                 return null;
             }
         }
 
         @Override
+        public short getShort(DidoData data) {
+
+            return (short) extractor.applyAsLong(fieldEntry(data));
+        }
+
+        @Override
+        public int getInt(DidoData data) {
+
+            return (int) extractor.applyAsLong(fieldEntry(data));
+        }
+
+        @Override
         public long getLong(DidoData data) {
-            return extractLong(data, fe -> fe.real().mantissa());
+
+            return extractor.applyAsLong(fieldEntry(data));
         }
     }
 
-    static class RealIntGetter extends OmmFieldGetter {
+    static class ShortGetter extends LongGetter {
 
-        RealIntGetter(int index) {
-            super(index);
+        ShortGetter(int index, ToLongFunction<? super FieldEntry> extractor) {
+            super(index, extractor);
+        }
+
+        @Override
+        public Object get(DidoData data) {
+            if (has(data)) {
+                return getShort(data);
+            } else {
+                return null;
+            }
+        }
+    }
+
+    static class IntGetter extends LongGetter {
+
+        IntGetter(int index, ToLongFunction<? super FieldEntry> extractor) {
+            super(index, extractor);
         }
 
         @Override
         public Object get(DidoData data) {
             if (has(data)) {
                 return getInt(data);
+            } else {
+                return null;
             }
-            else {
+        }
+    }
+
+    static class StringGetter extends OmmFieldGetter {
+
+        private final Function<? super FieldEntry, ? extends String> extractor;
+
+        StringGetter(int index, Function<? super FieldEntry, ? extends String> extractor) {
+            super(index);
+            this.extractor = extractor;
+        }
+
+        @Override
+        public Object get(DidoData data) {
+            if (has(data)) {
+                return getString(data);
+            } else {
                 return null;
             }
         }
 
         @Override
-        public int getInt(DidoData data) {
-            return (int) extractLong(data, fe -> fe.real().mantissa());
+        public String getString(DidoData data) {
+
+            return extractor.apply(fieldEntry(data));
         }
     }
 
@@ -497,68 +573,6 @@ public class DidoOmmData implements HasSchema {
         }
     }
 
-
-    static class IntGetter extends OmmFieldGetter {
-
-        IntGetter(int index) {
-            super(index);
-        }
-
-        @Override
-        public Object get(DidoData data) {
-            if (has(data)) {
-                return getLong(data);
-            }
-            else {
-                return null;
-            }
-        }
-
-        @Override
-        public long getLong(DidoData data) {
-            return extractLong(data, FieldEntry::intValue);
-        }
-    }
-
-    static class UintGetter extends OmmFieldGetter {
-
-        UintGetter(int index) {
-            super(index);
-        }
-
-        @Override
-        public Object get(DidoData data) {
-            if (has(data)) {
-                return getLong(data);
-            }
-            else {
-                return null;
-            }
-        }
-
-        @Override
-        public long getLong(DidoData data) {
-            return extractLong(data, FieldEntry::uintValue);
-        }
-    }
-
-    static class AsciiGetter extends OmmFieldGetter {
-
-        AsciiGetter(int index) {
-            super(index);
-        }
-
-        @Override
-        public Object get(DidoData data) {
-            return getString(data);
-        }
-
-        @Override
-        public String getString(DidoData data) {
-            return extract(data, fe -> fe.ascii().ascii());
-        }
-    }
-
     static class EnumGetter extends OmmFieldGetter {
 
         EnumGetter(int index) {
@@ -573,23 +587,6 @@ public class DidoOmmData implements HasSchema {
         @Override
         public int getInt(DidoData data) {
             return ((Data) data).fields[index].enumValue();
-        }
-    }
-
-    static class RmtesGetter extends OmmFieldGetter {
-
-        RmtesGetter(int index) {
-            super(index);
-        }
-
-        @Override
-        public Object get(DidoData data) {
-            return getString(data);
-        }
-
-        @Override
-        public String getString(DidoData data) {
-            return extract(data, fe -> fe.rmtes().rmtes().toString());
         }
     }
 
