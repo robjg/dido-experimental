@@ -1,15 +1,9 @@
 package dido.elsewhere.ema;
 
-import dido.data.DataSchema;
-import dido.data.schema.SchemaAware;
-import dido.flow.*;
-import dido.flow.util.LoggingKeyedDataConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -51,12 +45,6 @@ public class EmaConsumerService {
     private String password;
 
     /**
-     * @oddjob.description The service name to request data from.
-     * @oddjob.required Yes.
-     */
-    private String serviceName;
-
-    /**
      * @oddjob.description The directory where dictionary files are.
      * At the moment dictionary files must exist locally.
      * @oddjob.required No. Defaults to "."
@@ -64,58 +52,14 @@ public class EmaConsumerService {
     private Path dictionaryDir;
 
     /**
-     * @oddjob.description List of symbols.
-     * @oddjob.required No.
+     * @oddjob.description The consumer created by this service.
+     * @oddjob.required Read only.
      */
-    private List<String> symbols;
-
-    /**
-     * @oddjob.description Publisher of symbols.
-     * @oddjob.required No.
-     */
-    private KeyPublisher<String> keyPublisher;
-
-    /**
-     * @oddjob.description Required for the table.
-     * @oddjob.required Yes
-     */
-    private DataSchema schema;
-
-    /**
-     * @oddjob.description If the schema is only a partial schema.
-     * @oddjob.required No
-     */
-    private boolean partialSchema;
-
-    private LegacyChainConsumerConfig legacyChain;
-
-    /**
-     * @oddjob.description The destination. Set automatically if
-     * used in BeanBus.
-     * @oddjob.required No.
-     */
-    private KeyedDataConsumer<String> to;
-
     private DidoOmmConsumerConnection consumer;
 
     public CompletableFuture<Void> start() {
 
-        logger.info("Starting EmaConsumerService for host: {} and symbols: {}",
-                host, symbols);
-
-        KeyedDataConsumer<String> to = Objects.requireNonNullElseGet(this.to,
-                LoggingKeyedDataConsumer::new);
-
-        SchemaAware schemaAware = to instanceof SchemaAware ?
-                (SchemaAware) to : null;
-
-        KeyPublisher<String> keyAvailability = this.keyPublisher;
-        if (this.symbols != null) {
-            keyAvailability = (keyConsumer, options) -> {
-                symbols.forEach(keyConsumer::onKey);
-                return () -> {};
-            };
-        }
+        logger.info("Starting EmaConsumerService for host: {}", host);
 
         CompletableFuture<Void> future = new CompletableFuture<>();
 
@@ -124,15 +68,8 @@ public class EmaConsumerService {
                 .host(host)
                 .username(username)
                 .password(password)
-                .serviceName(serviceName)
                 .dictionaryDir(dictionaryDir)
-                .schema(schema)
-                .partialSchema(partialSchema)
-                .schemaAware(schemaAware)
-                .legacyChainConsumerConfig(legacyChain)
-                .keyAvailability(keyAvailability)
                 .started(() -> future.complete(null))
-                .to(to)
                 .start();
 
         return future;
@@ -186,68 +123,12 @@ public class EmaConsumerService {
         this.password = password;
     }
 
-    public String getServiceName() {
-        return serviceName;
-    }
-
-    public void setServiceName(String serviceName) {
-        this.serviceName = serviceName;
-    }
-
     public Path getDictionaryDir() {
         return dictionaryDir;
     }
 
     public void setDictionaryDir(Path dictionaryDir) {
         this.dictionaryDir = dictionaryDir;
-    }
-
-    public List<String> getSymbols() {
-        return symbols;
-    }
-
-    public void setSymbols(List<String> symbols) {
-        this.symbols = symbols;
-    }
-
-    public KeyPublisher<String> getKeyPublisher() {
-        return keyPublisher;
-    }
-
-    public void setKeyPublisher(KeyPublisher<String> keyPublisher) {
-        this.keyPublisher = keyPublisher;
-    }
-
-    public DataSchema getSchema() {
-        return schema;
-    }
-
-    public void setSchema(DataSchema schema) {
-        this.schema = schema;
-    }
-
-    public boolean isPartialSchema() {
-        return partialSchema;
-    }
-
-    public void setPartialSchema(boolean partialSchema) {
-        this.partialSchema = partialSchema;
-    }
-
-    public LegacyChainConsumerConfig getLegacyChain() {
-        return legacyChain;
-    }
-
-    public void setLegacyChain(LegacyChainConsumerConfig legacyChain) {
-        this.legacyChain = legacyChain;
-    }
-
-    public KeyedDataConsumer<String> getTo() {
-        return to;
-    }
-
-    public void setTo(KeyedDataConsumer<String> to) {
-        this.to = to;
     }
 
     @Override

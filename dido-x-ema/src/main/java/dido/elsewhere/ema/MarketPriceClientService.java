@@ -23,10 +23,24 @@ public class MarketPriceClientService {
      */
     private String name;
 
+    /**
+     * @oddjob.description The service name to request data from.
+     * @oddjob.required Yes.
+     */
     private String serviceName;
 
+    /**
+     * @oddjob.description A schema or partial schema for the resultant data.
+     * If not provided then one will be derived from the data.
+     * @oddjob.required No
+     */
     private DataSchema schema;
 
+    /**
+     * @oddjob.description If the schema is only a partial schema.
+     * Fields not defined will be derived from the data.
+     * @oddjob.required No
+     */
     private boolean partialSchema;
 
     /**
@@ -35,8 +49,17 @@ public class MarketPriceClientService {
      */
     private List<String> symbols;
 
+    /**
+     * @oddjob.description Publisher of symbols.
+     * @oddjob.required No.
+     */
     private KeyPublisher<String> keyPublisher;
 
+    /**
+     * @oddjob.description A mechanism for deriving symbol from
+     * the feed.
+     * @oddjob.required No.
+     */
     private LegacyChainConsumerConfig legacyChain;
 
     private SchemaAware schemaAware;
@@ -44,12 +67,15 @@ public class MarketPriceClientService {
     private Runnable started;
 
     /**
-     * @oddjob.description The destination. Set automatically if
-     * used in BeanBus.
+     * @oddjob.description The destination.
      * @oddjob.required No.
      */
     private KeyedDataConsumer<String> to;
 
+    /**
+     * @oddjob.description The consumer to register the client with.
+     * @oddjob.required Yes.
+     */
     private DidoOmmConsumer consumer;
 
     private QuietlyCloseable closeable;

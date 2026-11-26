@@ -156,7 +156,6 @@ public class MarketPriceClient implements OmmConsumerClient {
                         logger.warn("Failed closing {}", closeTask, e);
                     }
                 });
-                consumer.uninitialize();
             };
         }
     }
@@ -184,8 +183,7 @@ public class MarketPriceClient implements OmmConsumerClient {
                     keys.get());
             if (keys.get() <= 0) {
                 trigger();
-            }
-            else {
+            } else {
                 this.cocked = true;
             }
         }
