@@ -16,6 +16,13 @@
                 <arooa:annotation name="org.oddjob.framework.adapt.Stop" method="stop"/>
             </annotations>
         </arooa:bean-def>
+        <arooa:bean-def element='ema-client'
+                        className='dido.elsewhere.ema.MarketPriceClientService'>
+            <annotations>
+                <arooa:annotation name="org.oddjob.framework.adapt.Start" method="start"/>
+                <arooa:annotation name="org.oddjob.framework.adapt.Stop" method="stop"/>
+            </annotations>
+        </arooa:bean-def>
         <arooa:bean-def element="ema-iprovider"
                         className="dido.elsewhere.ema.EmaIProviderService">
             <properties>

@@ -1,28 +1,37 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <oddjob id="oddjob">
     <job>
-        <bus:bus xmlns:bus="oddjob:beanbus">
-            <of>
+        <cascade>
+            <jobs>
                 <lseg:ema-consumer configPath="${oddjob.dir}/../config/EmaConfigConsumer.xml"
-                                   host="localhost:14002" id="consumer" serviceName="DIRECT_FEED" xmlns:lseg="oddjob:lseg">
-                    <schema>
-                        <value value="#{Java.type('dido.elsewhere.ema.TickingTableService').SCHEMA}"/>
-                    </schema>
-                    <to>
-                        <value value="${table}"/>
-                    </to>
-                    <symbols>
-                        <list>
-                            <values>
-                                <value value="IBM.N"/>
-                                <value value="APPL.OQ"/>
-                                <value value="MSFT.OQ"/>
-                            </values>
-                        </list>
-                    </symbols>
+                                   host="localhost:14002" id="consumer" xmlns:lseg="oddjob:lseg">
                 </lseg:ema-consumer>
-                <dido:table id="table" xmlns:dido="oddjob:dido"/>
-            </of>
-        </bus:bus>
+                <bus:bus xmlns:bus="oddjob:beanbus">
+                    <of>
+                        <lseg:ema-client id="client" serviceName="DIRECT_FEED" xmlns:lseg="oddjob:lseg">
+                            <consumer>
+                                <value value="${consumer.consumer}"/>
+                            </consumer>
+                            <schema>
+                                <value value="#{Java.type('dido.elsewhere.ema.TickingTableService').SCHEMA}"/>
+                            </schema>
+                            <to>
+                                <value value="${table}"/>
+                            </to>
+                            <symbols>
+                                <list>
+                                    <values>
+                                        <value value="IBM.N"/>
+                                        <value value="APPL.OQ"/>
+                                        <value value="MSFT.OQ"/>
+                                    </values>
+                                </list>
+                            </symbols>
+                        </lseg:ema-client>
+                        <dido:table id="table" xmlns:dido="oddjob:dido"/>
+                    </of>
+                </bus:bus>
+            </jobs>
+        </cascade>
     </job>
 </oddjob>

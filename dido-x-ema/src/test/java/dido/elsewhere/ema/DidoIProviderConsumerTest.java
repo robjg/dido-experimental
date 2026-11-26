@@ -6,6 +6,7 @@ import dido.data.FromValues;
 import dido.data.immutable.NonBoxedDataFactoryProvider;
 import dido.data.partial.PartialData;
 import dido.flow.KeyedDataEvent;
+import dido.flow.QuietlyCloseable;
 import dido.table.internal.ConcurrentTableBasic;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -73,7 +74,7 @@ public class DidoIProviderConsumerTest {
 
         int port = freePort();
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch1 = new CountDownLatch(1);
 
         try (AutoCloseable providerClose = DidoOmmIProvider.with()
                 .configPath(providerConfigPath)
@@ -82,45 +83,57 @@ public class DidoIProviderConsumerTest {
                 .port(port)
                 .from(table);
 
-             AutoCloseable consumerClose = DidoOmmConsumer.with()
+             DidoOmmConsumerConnection consumerConnection = DidoOmmConsumerConnection.with()
                      .host("localhost:" + port)
-                     .serviceName("DIRECT_FEED")
                      .configPath(consumerConfigPath)
-                     .schema(SCHEMA)
-                     .keyAvailability(table)
-                     .started(latch::countDown)
-                     .to(KeyedDataEvent.asKeyedDataConsumer(queue::add))) {
+                     .started(latch1::countDown)
+                     .start()
+)
+        {
+            latch1.await();
 
-            latch.await();
+            CountDownLatch latch2 = new CountDownLatch(1);
 
-            logger.info("** Started Test");
+            DidoOmmConsumerClient marketPriceClient = MarketPriceClient.with()
+                    .serviceName("DIRECT_FEED")
+                    .schema(SCHEMA)
+                    .keyPublisher(table)
+                    .started(latch2::countDown)
+                    .to(KeyedDataEvent.asKeyedDataConsumer(queue::add));
 
-            List.of(e1, e2, e3)
-                    .forEach(KeyedDataEvent.fromKeyedDataConsumer(table));
+            try (QuietlyCloseable clientClose = consumerConnection.register(marketPriceClient)) {
 
-            logger.info("** Table Populated");
+                latch2.await();
 
-            for (int i = 0; i < 3; i++) {
+                logger.info("** Started Test");
 
-                KeyedDataEvent<String> event = queue.poll(20, TimeUnit.SECONDS);
+                List.of(e1, e2, e3)
+                        .forEach(KeyedDataEvent.fromKeyedDataConsumer(table));
 
-                System.out.println(event);
+                logger.info("** Table Populated");
 
-                MatcherAssert.assertThat(event, Matchers.equalTo(expected.remove()));
-            }
+                for (int i = 0; i < 3; i++) {
 
-            List.of(e4, e5)
-                    .forEach(KeyedDataEvent.fromKeyedDataConsumer(table));
+                    KeyedDataEvent<String> event = queue.poll(20, TimeUnit.SECONDS);
 
-            logger.info("** Events sent");
+                    System.out.println(event);
 
-            for (int i = 0; i < 2; i++) {
+                    MatcherAssert.assertThat(event, Matchers.equalTo(expected.remove()));
+                }
 
-                KeyedDataEvent<String> event = queue.poll(5, TimeUnit.SECONDS);
+                List.of(e4, e5)
+                        .forEach(KeyedDataEvent.fromKeyedDataConsumer(table));
 
-                System.out.println(event);
+                logger.info("** Events sent");
 
-                MatcherAssert.assertThat(event, Matchers.equalTo(expected.remove()));
+                for (int i = 0; i < 2; i++) {
+
+                    KeyedDataEvent<String> event = queue.poll(5, TimeUnit.SECONDS);
+
+                    System.out.println(event);
+
+                    MatcherAssert.assertThat(event, Matchers.equalTo(expected.remove()));
+                }
             }
         }
 

@@ -96,7 +96,7 @@ public class EmaConsumerService {
      */
     private KeyedDataConsumer<String> to;
 
-    private QuietlyCloseable close;
+    private DidoOmmConsumerConnection consumer;
 
     public CompletableFuture<Void> start() {
 
@@ -111,18 +111,15 @@ public class EmaConsumerService {
 
         KeyPublisher<String> keyAvailability = this.keyPublisher;
         if (this.symbols != null) {
-            keyAvailability = new KeyPublisher<String>() {
-                @Override
-                public QuietlyCloseable subscribeKeys(KeyConsumer<? super String> keyConsumer, SubscriptionOptions options) {
-                    symbols.forEach(keyConsumer::onKey);
-                    return () -> {};
-                }
+            keyAvailability = (keyConsumer, options) -> {
+                symbols.forEach(keyConsumer::onKey);
+                return () -> {};
             };
         }
 
         CompletableFuture<Void> future = new CompletableFuture<>();
 
-        this.close = DidoOmmConsumer.with()
+        this.consumer = DidoOmmConsumerConnection.with()
                 .configPath(configPath)
                 .host(host)
                 .username(username)
@@ -135,13 +132,18 @@ public class EmaConsumerService {
                 .legacyChainConsumerConfig(legacyChain)
                 .keyAvailability(keyAvailability)
                 .started(() -> future.complete(null))
-                .to(to);
+                .to(to)
+                .start();
 
         return future;
     }
 
     public void stop() {
-        close.close();
+        consumer.close();
+    }
+
+    public DidoOmmConsumer getConsumer() {
+        return consumer;
     }
 
     public String getName() {
